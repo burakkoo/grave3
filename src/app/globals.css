@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.max-h-50p {
+  max-height: 35rem;
+}
+
+@layer base {
+  :root {
+    --background: 220 220 220; /* Darker Base Gray */
+    --foreground: 30 30 30; /* Very Dark Gray */
+    --card: 235 235 235; /* Medium Gray */
+    --card-foreground: 40 40 40; /* Very Dark Charcoal */
+    --popover: 215 215 215; /* Dark Silver */
+    --popover-foreground: 40 40 40; /* Very Dark Charcoal */
+    --primary: 45 85 195; /* Rich Navy Blue */
+    --primary-foreground: 235 235 235; /* Light Gray */
+    --primary-accent: 70 125 215; /* Softer Blue */
+    --secondary: 95 55 195; /* Deep Purple */
+    --secondary-foreground: 235 235 235; /* Light Gray */
+    --secondary-accent: 115 75 215; /* Lighter Purple */
+    --muted: 170 170 170; /* Balanced Medium Gray */
+    --muted-foreground: 90 90 90; /* Dark Gray */
+    --accent: 195 85 65; /* Muted Coral */
+    --accent-foreground: 235 235 235; /* Light Gray */
+    --success: 35 150 90; /* Forest Green */
+    --success-foreground: 235 235 235; /* Light Gray */
+    --warning: 195 145 25; /* Rich Gold */
+    --warning-foreground: 235 235 235; /* Light Gray */
+    --destructive: 185 45 45; /* Deep Red */
+    --destructive-foreground: 235 235 235; /* Light Gray */
+    --border: 190 190 190; /* Subtle Border */
+    --input: 235 235 235; /* Medium Gray */
+    --ring: 0.25rem;
+  }
+
+  .dark {
+    --background: 15 15 25;
+    --foreground: 200 200 210;
+    --card: 22 22 32;
+    --card-foreground: 235 235 245;
+    --popover: 28 28 38;
+    --popover-foreground: 200 200 210;
+    /* New modern button colors */
+    --primary: 142 142 160; /* Neutral gray with slight purple tint */
+    --primary-foreground: 255 255 255;
+    --primary-accent: 162 162 180;
+    --secondary: 124 124 142; /* Slightly darker neutral */
+    --secondary-foreground: 255 255 255;
+    --secondary-accent: 144 144 162;
+    /* Rest of the colors */
+    --muted: 130 130 140;
+    --muted-foreground: 190 190 200;
+    --accent: 205 95 75;
+    --accent-foreground: 15 15 25;
+    --success: 45 160 100;
+    --success-foreground: 15 15 25;
+    --warning: 205 155 35;
+    --warning-foreground: 15 15 25;
+    --destructive: 195 55 55;
+    --destructive-foreground: 200 200 210;
+    --border: 35 35 45;
+    --input: 28 28 38;
+    --input-foreground: 235 235 245;
+  }
+
+  /* width */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  /* Track */
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--background));
+  }
+
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--muted));
+  }
+
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--muted-foreground));
+  }
+
+  input, textarea, select {
+    color: rgb(var(--input-foreground));
+  }
+
+  /* Force text color for inputs and textareas */
+  input, 
+  textarea, 
+  select,
+  [contenteditable="true"],
+  .mentions-input,
+  .DraftEditor-root {
+    color: rgb(235 235 245) !important;
+  }
+
+  /* Style placeholder text */
+  ::placeholder {
+    color: rgb(130 130 140) !important;
+  }
+
+  /* Style select options */
+  option {
+    background-color: rgb(28 28 38);
+    color: rgb(235 235 245);
+  }
+}
+
+@layer components {
+  .link {
+    @apply rounded-sm decoration-blue-500 decoration-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500;
+  }
+}
