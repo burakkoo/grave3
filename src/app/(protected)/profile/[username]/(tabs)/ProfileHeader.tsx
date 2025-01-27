@@ -24,12 +24,24 @@ export function ProfileHeader({
 
   return (
     <>
-      <div className="relative mb-[88px] md:pt-6">
-        <div className="h-60 overflow-hidden bg-muted/30 drop-shadow-xl md:rounded-3xl">
-          <CoverPhoto isOwnProfile={isOwnProfile} photoUrl={profile.coverPhoto} posY={profile.coverPhotoPositionY} profileId={profile.id} />
+      <div className="relative mb-[88px]">
+        <div className="relative h-48 sm:h-56 md:h-72 overflow-hidden bg-muted/30 drop-shadow-xl md:rounded-3xl">
+          <div className="absolute inset-0">
+            <CoverPhoto 
+              isOwnProfile={isOwnProfile} 
+              photoUrl={profile.coverPhoto} 
+              posY={profile.coverPhotoPositionY} 
+              profileId={profile.id} 
+            />
+          </div>
         </div>
-        <ProfilePhoto isOwnProfile={isOwnProfile} photoUrl={profile.profilePhoto} name={initialProfileData.name!} profileId={profile.id} />
-        <div className="absolute -bottom-20 right-2 md:right-0">
+        <ProfilePhoto 
+          isOwnProfile={isOwnProfile} 
+          photoUrl={profile.profilePhoto} 
+          name={initialProfileData.name!} 
+          profileId={profile.id} 
+        />
+        <div className="absolute -bottom-20 right-2 md:right-4 z-10">
           {isOwnProfile ? (
             <ButtonLink shape="pill" mode="subtle" href="/edit-profile">
               Edit Profile

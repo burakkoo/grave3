@@ -22,19 +22,12 @@ export default function CoverPhoto({
     useUpdateProfileAndCoverPhotoClient('cover');
   const { showVisualMediaModal } = useVisualMediaModal();
 
-  // State to track position, dragging status, and image upload status
-  const [positionY, setPositionY] = useState(posY);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isPhotoUploaded, setIsPhotoUploaded] = useState(false);
-  const [showDragMessage, setShowDragMessage] = useState(true); // State for showing the message
+  // Simplified state
+  const [position, setPosition] = useState<number>(posY || 0);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const dragStartY = useRef(0);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Function to open cover photo
   const openCoverPhoto = useCallback(() => {
-    if (photoUrl) {
+    if (photoUrl && !isEditing) {
       showVisualMediaModal({
         visualMedia: [
           {
@@ -47,93 +40,87 @@ export default function CoverPhoto({
         profileId: profileId
       });
     }
-  }, [photoUrl, showVisualMediaModal, profileId]);
-
-  // Handle image dragging
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isPhotoUploaded) return; // Prevent dragging if no photo uploaded
-    setIsDragging(true);
-    dragStartY.current = e.clientY - positionY!; // Capture initial Y position when dragging starts
-    setShowDragMessage(false); // Hide the message on first interaction
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && imageRef.current && containerRef.current) {
-      const containerHeight = containerRef.current.offsetHeight;
-      const imageHeight = imageRef.current.offsetHeight;
-      const newY = e.clientY - dragStartY.current;
-
-      // Ensure that the image stays within container bounds
-      if (newY <= 0 && newY >= containerHeight - imageHeight) {
-        setPositionY(newY);
-      }
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false); // Stop dragging when mouse is released
-  };
+  }, [photoUrl, showVisualMediaModal, profileId, isEditing]);
 
   // Handle file upload
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleChange(e); // Call original handleChange to update the photo
-    setIsPhotoUploaded(true); // Enable dragging after photo is uploaded
-    setShowDragMessage(true); // Show the message after a new photo is uploaded
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await handleChange(e);
+    setIsEditing(true);
   };
 
-  // Save the image's position
-  const handleSavePosition = () => {
-    setIsPhotoUploaded(false); // Reset photo upload state
-    savePositionY(positionY!); // Call the savePositionY function
-    console.log('Position saved:', positionY); // Implement save logic here
+  // Save position and exit edit mode
+  const handleSave = () => {
+    savePositionY(position);
+    setIsEditing(false);
   };
 
-  // Use effect or logic to hide the message after any interaction
-  const disableDragMessage = () => {
-    setShowDragMessage(false);
+  // Simple position adjustment buttons
+  const adjustPosition = (direction: 'up' | 'down') => {
+    setPosition(prev => {
+      const newPosition = direction === 'up' ? prev + 10 : prev - 10;
+      // Limit the range of movement
+      return Math.max(Math.min(newPosition, 0), -200);
+    });
   };
 
   return (
-    <div
-      className="relative h-full w-full mx-auto max-w-2xl"
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp} // Ensure dragging stops when the cursor leaves the container
-    >
+    <div className="relative h-full w-full mx-auto">
       {photoUrl && (
-        <img
-          src={photoUrl}
-          alt="Cover"
-          className={`absolute w-full object-cover ${isPhotoUploaded ? 'cursor-move' : ''}`} // Show grab cursor
-          ref={imageRef}
-          style={{ transform: `translateY(${positionY}px)` }}
-          onMouseDown={handleMouseDown}
-          draggable="false" // Disable default image drag behavior
-        />
-      )}
+        <div className="relative h-full w-full">
+          <img
+            src={photoUrl}
+            alt="Cover"
+            className="absolute h-full w-full object-cover"
+            style={{ 
+              transform: `translateY(${position}px)`,
+              objectPosition: `center ${position}px`
+            }}
+            draggable="false"
+          />
+          
+          {/* Overlay for opening photo modal */}
+          {!isEditing && (
+            <button
+              type="button"
+              aria-label="Open cover photo"
+              onClick={openCoverPhoto}
+              className="absolute h-full w-full cursor-pointer bg-black/30 opacity-0 active:opacity-100"
+            />
+          )}
 
-      {/* Show a message that the user can drag the image */}
-      {isPhotoUploaded && showDragMessage && (
-        <div
-          onMouseDown={disableDragMessage}
-          className="absolute left-0 top-0 z-10 flex h-full w-full items-center justify-center bg-black/50 text-white">
-          <p className="text-center">Drag to adjust your cover photo</p>
+          {/* Edit controls */}
+          {isEditing && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4 p-4 rounded-lg bg-background/80 backdrop-blur-sm">
+                <div className="flex gap-2">
+                  <Button
+                    onPress={() => adjustPosition('up')}
+                    size="small"
+                  >
+                    Move Up
+                  </Button>
+                  <Button
+                    onPress={() => adjustPosition('down')}
+                    size="small"
+                  >
+                    Move Down
+                  </Button>
+                </div>
+                <Button
+                  onPress={handleSave}
+                  Icon={Check}
+                  size="small"
+                >
+                  Save Position
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Overlay to open photo modal */}
-      {!isPhotoUploaded && (
-        <button
-          type="button"
-          aria-label="Open cover photo"
-          onClick={openCoverPhoto}
-          className="absolute h-full w-full cursor-pointer bg-black/30 opacity-0 active:opacity-100"
-        />
-      )}
-
-      {/* File upload for own profile */}
-      {isOwnProfile && (isPhotoUploaded || !isPending) && (
+      {/* Upload button */}
+      {isOwnProfile && !isEditing && !isPending && (
         <label>
           <div className="absolute bottom-4 right-4">
             <input
@@ -151,15 +138,6 @@ export default function CoverPhoto({
               size="small"
               loading={isPending}
             />
-          </div>
-        </label>
-      )}
-
-      {/* Show Save button only after a new photo is uploaded */}
-      {isPhotoUploaded && !isPending && (
-        <label>
-          <div className="absolute bottom-4 right-4">
-            <Button Icon={Check} iconClassName="text-primary-foreground" onPress={handleSavePosition} size="small" />
           </div>
         </label>
       )}
