@@ -3,7 +3,7 @@ import GitHub from 'next-auth/providers/github';
 import Facebook from 'next-auth/providers/facebook';
 import Google from 'next-auth/providers/google';
 import { NextResponse } from 'next/server';
-import { config } from './lib/config';
+import config from '@/lib/config';
 
 export default {
   providers: [GitHub, Facebook, Google],

@@ -3,7 +3,7 @@ import { CreatePostModalLauncher } from '@/components/CreatePostModalLauncher';
 import { getServerUser } from '@/lib/getServerUser';
 import { getProfile } from '../getProfile';
 import { set } from 'lodash';
-import { config } from '@/lib/config';
+import config from '@/lib/config';
 
 export async function generateMetadata({ params }: { params: { username: string } }) {
   const profile = await getProfile(params.username);
