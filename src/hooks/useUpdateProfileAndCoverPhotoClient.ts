@@ -27,6 +27,8 @@ export function useUpdateProfileAndCoverPhotoClient(toUpdate: 'profile' | 'cover
     const file = files[0];
 
     formData.append(name, file, file.name);
+    formData.append('type', toUpdate);
+    formData.append('skipPost', 'true');
 
     if (!userId) return;
     updateSessionUserPhotosMutation.mutate(

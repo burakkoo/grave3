@@ -10,8 +10,16 @@ import {
   FaImages,
   FaVideo
 } from 'react-icons/fa';
+import { useRouter } from 'next/navigation';
 
 export function About({ profile }: { profile: GetUser }) {
+  const router = useRouter();
+
+  // Add useEffect to revalidate data when component mounts
+  React.useEffect(() => {
+    router.refresh();
+  }, [router]);
+
   const {
     name,
     birthDate,
