@@ -32,15 +32,35 @@ export default function ProfilePhoto({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Create temporary URL for preview
-    const tempUrl = URL.createObjectURL(file);
-    setTempPhotoUrl(tempUrl);
-    
     try {
+      // Create temporary URL for preview
+      const tempUrl = URL.createObjectURL(file);
+      setTempPhotoUrl(tempUrl);
+      
       const uploadedUrl = await handleChange(e);
       if (uploadedUrl) {
-        setTempPhotoUrl(uploadedUrl); // Update temp URL with uploaded URL
-        setTempPhotoUrl(null); // Only clear after setting the uploaded URL
+        // Immediately update the cache with new photo URL
+        queryClient.setQueryData(['user', profileId], (oldData: any) => ({
+          ...oldData,
+          profilePhoto: uploadedUrl
+        }));
+
+        // Update any queries that include this user's data
+        queryClient.setQueriesData({ queryKey: ['user'] }, (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            profilePhoto: uploadedUrl
+          };
+        });
+
+        // Clear temp URL after a short delay to ensure smooth transition
+        setTimeout(() => {
+          setTempPhotoUrl(null);
+        }, 100);
+
+        // Force a refetch to ensure consistency
+        await queryClient.invalidateQueries({ queryKey: ['user', profileId] });
       }
     } catch (error) {
       setTempPhotoUrl(null);
