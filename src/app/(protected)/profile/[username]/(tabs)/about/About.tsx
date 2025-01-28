@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { format } from 'date-fns';
 import { GetUser } from '@/types/definitions';
@@ -15,10 +17,11 @@ import { useRouter } from 'next/navigation';
 export function About({ profile }: { profile: GetUser }) {
   const router = useRouter();
 
-  // Add useEffect to revalidate data when component mounts
+  // Add revalidation tag at the component level
   React.useEffect(() => {
+    // This will revalidate the page when profile data changes
     router.refresh();
-  }, [router]);
+  }, [profile]);
 
   const {
     name,
