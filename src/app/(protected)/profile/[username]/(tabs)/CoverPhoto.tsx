@@ -4,6 +4,8 @@ import { useUpdateProfileAndCoverPhotoClient } from '@/hooks/useUpdateProfileAnd
 import { useVisualMediaModal } from '@/hooks/useVisualMediaModal';
 import SvgImage from '@/svg_components/Image';
 import Check from '@/svg_components/Check';
+import { useToast } from '@/hooks/useToast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CoverPhotoProps {
   isOwnProfile: boolean;
@@ -21,6 +23,8 @@ export default function CoverPhoto({
   const { inputFileRef, openInput, handleChange, savePositionY, isPending } =
     useUpdateProfileAndCoverPhotoClient('cover');
   const { showVisualMediaModal } = useVisualMediaModal();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   const [positionY, setPositionY] = useState(posY);
   const [isDragging, setIsDragging] = useState(false);
@@ -100,19 +104,36 @@ export default function CoverPhoto({
     try {
       const uploadedUrl = await handleChange(e);
       if (uploadedUrl) {
+        setTempPhotoUrl(uploadedUrl); // Update temp URL with uploaded URL
         setIsPhotoUploaded(true);
         setShowDragMessage(true);
       }
     } catch (error) {
       setTempPhotoUrl(null);
+      setIsPhotoUploaded(false);
     }
   };
 
   // Save the image's position
   const handleSavePosition = async () => {
-    await savePositionY(positionY!);
-    setIsPhotoUploaded(false);
-    setShowDragMessage(false);
+    try {
+      await savePositionY(positionY!);
+      setIsPhotoUploaded(false);
+      setShowDragMessage(false);
+      showToast({
+        type: 'success',
+        title: 'Success',
+        message: 'Cover photo position saved',
+      });
+      // Force refresh the photo URL to show the new position
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to save position',
+      });
+    }
   };
 
   return (

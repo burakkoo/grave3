@@ -7,6 +7,7 @@ import { useUpdateProfileAndCoverPhotoClient } from '@/hooks/useUpdateProfileAnd
 import { useVisualMediaModal } from '@/hooks/useVisualMediaModal';
 import { Camera } from '@/svg_components';
 import Check from '@/svg_components/Check';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function ProfilePhoto({
   isOwnProfile,
@@ -22,6 +23,7 @@ export default function ProfilePhoto({
   const { inputFileRef, openInput, handleChange, isPending } = useUpdateProfileAndCoverPhotoClient('profile');
   const { showVisualMediaModal } = useVisualMediaModal();
   const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Handle file change
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,9 +35,15 @@ export default function ProfilePhoto({
     setTempPhotoUrl(tempUrl);
     
     try {
-      await handleChange(e);
-      setTempPhotoUrl(null); // Clear temp URL after successful upload
+      const uploadedUrl = await handleChange(e);
+      if (uploadedUrl) {
+        // Force refresh the profile data
+        await queryClient.invalidateQueries({ queryKey: ['user'] });
+        await queryClient.refetchQueries({ queryKey: ['user'] });
+      }
     } catch (error) {
+      // Handle error
+    } finally {
       setTempPhotoUrl(null);
     }
   };
