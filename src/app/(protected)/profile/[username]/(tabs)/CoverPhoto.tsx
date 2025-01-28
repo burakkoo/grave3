@@ -64,27 +64,23 @@ export default function CoverPhoto({
   };
 
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (isDragging && imageRef.current && containerRef.current) {
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      const containerHeight = containerRef.current.offsetHeight;
-      const imageHeight = imageRef.current.offsetHeight;
-      
-      // Ensure image fills container width and maintains proper height
-      if (imageRef.current) {
-        imageRef.current.style.width = '100%';
-        imageRef.current.style.objectFit = 'cover';
-        // Set image height to be 120% of container to allow for movement
-        const targetHeight = Math.max(containerHeight * 1.2, imageHeight);
-        imageRef.current.style.height = `${targetHeight}px`;
-      }
+    if (!isDragging || !imageRef.current || !containerRef.current) return;
+    
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const containerHeight = containerRef.current.offsetHeight;
+    const imageHeight = imageRef.current.offsetHeight;
+    
+    // Calculate drag bounds
+    const maxDragDistance = imageHeight - containerHeight;
+    const newY = clientY - dragStartY.current;
 
-      // Calculate drag bounds
-      const maxDragDistance = imageHeight - containerHeight;
-      const newY = clientY - dragStartY.current;
+    // Constrain the movement
+    const constrainedY = Math.max(-maxDragDistance, Math.min(0, newY));
+    setPositionY(constrainedY);
 
-      // Constrain the movement
-      const constrainedY = Math.max(-maxDragDistance, Math.min(0, newY));
-      setPositionY(constrainedY);
+    // Update image position immediately
+    if (imageRef.current) {
+      imageRef.current.style.transform = `translateY(${constrainedY}px)`;
     }
   };
 
@@ -160,7 +156,7 @@ export default function CoverPhoto({
         <img
           src={tempPhotoUrl || photoUrl || ''}
           alt="Cover"
-          className={`absolute w-full object-cover ${
+          className={`absolute w-full object-cover transition-transform ${
             isPhotoUploaded ? 'cursor-move' : ''
           }`}
           ref={imageRef}
@@ -169,10 +165,10 @@ export default function CoverPhoto({
             height: '120%',
             objectPosition: 'center',
             userSelect: 'none',
-            pointerEvents: isPhotoUploaded ? 'auto' : 'none',
+            pointerEvents: isPhotoUploaded ? 'all' : 'none',
           }}
-          onMouseDown={isPhotoUploaded ? handleDragStart : undefined}
-          onTouchStart={isPhotoUploaded ? handleDragStart : undefined}
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
           draggable="false"
         />
       )}

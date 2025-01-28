@@ -37,13 +37,17 @@ export default function ProfilePhoto({
     try {
       const uploadedUrl = await handleChange(e);
       if (uploadedUrl) {
+        // Update the temp URL with the uploaded URL
+        setTempPhotoUrl(uploadedUrl);
+        
         // Force refresh the profile data
         await queryClient.invalidateQueries({ queryKey: ['user'] });
-        await queryClient.refetchQueries({ queryKey: ['user'] });
+        // Wait a moment before clearing the temp URL to ensure the new photo is loaded
+        setTimeout(() => {
+          setTempPhotoUrl(null);
+        }, 500);
       }
     } catch (error) {
-      // Handle error
-    } finally {
       setTempPhotoUrl(null);
     }
   };
@@ -63,7 +67,13 @@ export default function ProfilePhoto({
         <img 
           src={tempPhotoUrl || photoUrl || ''} 
           alt="Profile photo" 
-          className="absolute h-full w-full rounded-full border-4 object-cover" 
+          className="absolute h-full w-full rounded-full border-4 border-white object-cover"
+          onLoad={() => {
+            // Clear tempPhotoUrl when the new image loads successfully
+            if (tempPhotoUrl) {
+              setTimeout(() => setTempPhotoUrl(null), 100);
+            }
+          }}
         />
       )}
       
