@@ -37,14 +37,23 @@ export function useUpdateProfileAndCoverPhotoClient(type: 'profile' | 'cover') {
         throw new Error(data.error || 'Failed to update photo');
       }
 
-      // Update cache with new data
+      // Immediately update the cache with new data before invalidating
       queryClient.setQueryData(['user', userId], (oldData: any) => ({
         ...oldData,
         [type === 'profile' ? 'profilePhotoUrl' : 'coverPhotoUrl']: data.uploadedTo
       }));
 
-      // Then invalidate to ensure consistency
-      await queryClient.invalidateQueries({ queryKey: ['user'] });
+      // Also update any queries that include this user's data
+      queryClient.setQueriesData({ queryKey: ['user'] }, (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          [type === 'profile' ? 'profilePhotoUrl' : 'coverPhotoUrl']: data.uploadedTo
+        };
+      });
+
+      // Quick invalidate without waiting
+      queryClient.invalidateQueries({ queryKey: ['user'] }).catch(() => {});
 
       showToast({
         type: 'success',
