@@ -49,32 +49,41 @@ export default function CoverPhoto({
     }
   }, [photoUrl, showVisualMediaModal, profileId]);
 
-  // Handle image dragging
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isPhotoUploaded) return; // Prevent dragging if no photo uploaded
+  // Handle both mouse and touch events
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isPhotoUploaded) return;
     setIsDragging(true);
-    dragStartY.current = e.clientY - positionY!; // Capture initial Y position when dragging starts
-    setShowDragMessage(false); // Hide the message on first interaction
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    dragStartY.current = clientY - (positionY || 0);
+    setShowDragMessage(false);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (isDragging && imageRef.current && containerRef.current) {
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
       const containerHeight = containerRef.current.offsetHeight;
       const imageHeight = imageRef.current.offsetHeight;
       
-      // Calculate the minimum position that ensures the image covers the container
+      // Ensure image fills container width
+      if (imageRef.current) {
+        imageRef.current.style.width = '100%';
+        imageRef.current.style.height = 'auto';
+        // Ensure minimum height is at least container height
+        imageRef.current.style.minHeight = `${containerHeight}px`;
+      }
+
+      // Calculate bounds
       const minY = -(imageHeight - containerHeight);
       const maxY = 0;
       
       // Calculate new position
-      const newY = Math.min(maxY, Math.max(minY, e.clientY - dragStartY.current));
-      
+      const newY = Math.min(maxY, Math.max(minY, clientY - dragStartY.current));
       setPositionY(newY);
     }
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false); // Stop dragging when mouse is released
+  const handleDragEnd = () => {
+    setIsDragging(false);
   };
 
   // Handle file upload
@@ -100,19 +109,28 @@ export default function CoverPhoto({
     <div
       className="relative h-full w-full mx-auto max-w-2xl"
       ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp} // Ensure dragging stops when the cursor leaves the container
+      onMouseMove={handleDragMove}
+      onMouseUp={handleDragEnd}
+      onMouseLeave={handleDragEnd}
+      onTouchMove={handleDragMove}
+      onTouchEnd={handleDragEnd}
+      onTouchCancel={handleDragEnd}
     >
       {photoUrl && (
         <img
           src={photoUrl}
           alt="Cover"
-          className={`absolute w-full object-cover ${isPhotoUploaded ? 'cursor-move' : ''}`} // Show grab cursor
+          className={`absolute w-full object-cover ${
+            isPhotoUploaded ? 'cursor-move' : ''
+          }`}
           ref={imageRef}
-          style={{ transform: `translateY(${positionY}px)` }}
-          onMouseDown={handleMouseDown}
-          draggable="false" // Disable default image drag behavior
+          style={{
+            transform: `translateY(${positionY}px)`,
+            minHeight: '100%', // Ensure image is at least as tall as container
+          }}
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+          draggable="false"
         />
       )}
 
