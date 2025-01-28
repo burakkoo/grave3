@@ -39,36 +39,10 @@ export default function ProfilePhoto({
     try {
       const uploadedUrl = await handleChange(e);
       if (uploadedUrl) {
-        // Update temp URL with the uploaded URL
-        setTempPhotoUrl(uploadedUrl);
-        
-        // Force immediate cache update and refetch
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['user'] }),
-          queryClient.refetchQueries({ 
-            queryKey: ['user'],
-            type: 'active',
-            exact: false 
-          })
-        ]);
-
-        // Keep showing the new photo while cache updates
-        setTimeout(async () => {
-          // Do one final refetch to ensure we have the latest data
-          await queryClient.refetchQueries({ 
-            queryKey: ['user'],
-            type: 'active'
-          });
-          setTempPhotoUrl(null);
-        }, 1500);
+        setTempPhotoUrl(null); // Clear temp URL after successful upload
       }
     } catch (error) {
       setTempPhotoUrl(null);
-      showToast({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to update profile photo',
-      });
     }
   };
 
