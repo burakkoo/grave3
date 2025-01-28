@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma/prisma';
 
 import { getServerUser } from '@/lib/getServerUser';
+import { verifyAccessToPost } from '../verifyAccessToPost';
 
 export async function POST(
   request: Request,
