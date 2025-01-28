@@ -12,8 +12,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: { postId: string } }
 ) {
-  // Convert postId to string if it's a number
-  const postId = params.postId.toString();
+  const postId = params.postId; // Keep as string since Post.id is String type
   
   // Verify access first
   const hasAccess = await verifyAccessToPost(postId);
@@ -28,7 +27,7 @@ export async function DELETE(
         visualMedia: true,
       },
       where: {
-        id: postId,
+        id: postId, // Use string ID
       },
     });
 
