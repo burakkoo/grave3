@@ -1,18 +1,22 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useDialogs } from './useDialogs';
 import { useToast } from './useToast';
+import { invalidateUserCache, userKeys } from '@/lib/cache/userCache';
 import { useSessionUserDataMutation } from './mutations/useSessionUserDataMutation';
+import { useQueryClient } from '@tanstack/react-query';
 
-export function useUpdateProfileAndCoverPhotoClient(toUpdate: 'profile' | 'cover') {
+export function useUpdateProfileAndCoverPhotoClient(type: 'profile' | 'cover') {
   const { data: session } = useSession();
   const userId = session?.user.id;
   const { updateSessionUserPhotosMutation, updatePositionYMutation } = useSessionUserDataMutation();
   const { alert } = useDialogs();
   const { showToast } = useToast();
   const inputFileRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  const [isPending, setIsPending] = useState(false);
 
   const openInput = () => {
     if (inputFileRef.current == null) return;
@@ -20,44 +24,52 @@ export function useUpdateProfileAndCoverPhotoClient(toUpdate: 'profile' | 'cover
   };
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, files } = e.target;
-    const formData = new FormData();
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    if (files === null) return;
-    const file = files[0];
+    try {
+      setIsPending(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('toUpdate', type === 'profile' ? 'profilePhoto' : 'coverPhoto');
 
-    formData.append(name, file, file.name);
+      const res = await fetch('/api/users/photo', {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (!userId) return;
-    updateSessionUserPhotosMutation.mutate(
-      {
-        toUpdate,
-        formData,
-      },
-      {
-        onSuccess: () => {
-          showToast({
-            title: 'Success!',
-            message: `Your ${toUpdate} photo has been updated.`,
-            type: 'success',
-          });
-        },
-        onError: () => {
-          alert({
-            title: 'Upload Error',
-            message: 'There was an error uploading your photo.',
-          });
-        },
-      },
-    );
+      if (!res.ok) throw new Error('Failed to update photo');
+      
+      const data = await res.json();
+      
+      // Optimistically update cache
+      queryClient.setQueryData(userKeys.all, (oldData: any) => ({
+        ...oldData,
+        [type === 'profile' ? 'profilePhoto' : 'coverPhoto']: data.uploadedTo,
+      }));
 
-    if (inputFileRef.current === null) return;
-    inputFileRef.current.value = '';
+      // Invalidate relevant caches
+      await invalidateUserCache(queryClient, data.userId);
+
+      showToast({
+        type: 'success',
+        title: 'Success',
+        message: 'Photo updated successfully',
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update photo',
+      });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   // Separate function for saving positionY
   const savePositionY = async (positionY: number) => {
-    if (!userId || toUpdate !== 'cover') return;
+    if (!userId || type !== 'cover') return;
 
     updatePositionYMutation.mutate(
       { userId, positionY },
@@ -84,6 +96,6 @@ export function useUpdateProfileAndCoverPhotoClient(toUpdate: 'profile' | 'cover
     openInput,
     handleChange,
     savePositionY,
-    isPending: updateSessionUserPhotosMutation.isPending,
+    isPending,
   };
 }

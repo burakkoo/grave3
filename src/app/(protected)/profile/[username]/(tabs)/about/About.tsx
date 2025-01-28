@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { format } from 'date-fns';
 import { GetUser } from '@/types/definitions';
 import { FaFacebook, FaInstagram, FaTwitter, FaWikipediaW, FaSpotify, FaYoutube } from 'react-icons/fa';
@@ -13,52 +13,50 @@ import {
   FaVideo
 } from 'react-icons/fa';
 import { useRouter, usePathname } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { userKeys, USER_STALE_TIME } from '@/lib/cache/userCache';
 
 export function About({ profile: initialProfile }: { profile: GetUser }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [profile, setProfile] = useState(initialProfile);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setProfile(initialProfile);
-    setIsLoading(false);
-  }, [initialProfile]);
-
-  // Force revalidation when the About tab is active
-  useEffect(() => {
-    if (pathname.endsWith('/about')) {
-      // Add a small delay to ensure the revalidation happens after navigation
-      const timeoutId = setTimeout(() => {
-        router.refresh();
-      }, 100);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [pathname, router]);
+  const queryClient = useQueryClient();
+  
+  const { data: profile, isLoading } = useQuery<GetUser>({
+    queryKey: userKeys.profile(initialProfile.id),
+    queryFn: async () => {
+      const response = await fetch(`/api/users/${initialProfile.id}`);
+      if (!response.ok) throw new Error('Failed to fetch profile');
+      const data = await response.json();
+      return data as GetUser;
+    },
+    initialData: initialProfile,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false
+  });
 
   const {
     name,
     birthDate,
     dateOfPassing,
     bio,
-    achievements,
-    favoriteMusic,
-    favoriteMovies,
-    photos,
-    videos,
+    achievements = [],
+    favoriteMusic = [],
+    favoriteMovies = [],
+    photos = [],
+    videos = [],
     facebookLink,
     instagramLink,
     twitterLink,
     wikiLink,
     youtubeLink,
-  } = profile;
+  } = profile || {};
 
   const spotifyPlaylist = favoriteMusic
-    .filter((song) => song.includes('spotify'))
-    .map((song) => song.split('playlist/')[1]);
+    .filter((song: string) => song.includes('spotify'))
+    .map((song: string) => song.split('playlist/')[1]);
 
-  const favMusic = favoriteMusic.filter((song) => !song.includes('spotify'));
+  const favMusic = favoriteMusic.filter((song: string) => !song.includes('spotify'));
 
   const extractYouTubeVideoID = (url: string) => {
     // Regular expression to match YouTube video IDs
@@ -68,8 +66,8 @@ export function About({ profile: initialProfile }: { profile: GetUser }) {
   };
 
   // Separate Spotify playlists and regular music
-  const spotifyPlaylists = favoriteMusic.filter(song => song.includes('spotify'));
-  const regularMusic = favoriteMusic.filter(song => !song.includes('spotify'));
+  const spotifyPlaylists = favoriteMusic.filter((song: string) => song.includes('spotify'));
+  const regularMusic = favoriteMusic.filter((song: string) => !song.includes('spotify'));
 
   if (isLoading) {
     return (
