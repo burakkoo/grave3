@@ -24,7 +24,7 @@ async function getVisualMedia(username: string) {
         in: ['PHOTO', 'VIDEO']  // Include both photos and videos
       },
       post: {
-        ApprovalStatus: true
+        approvalStatus: true
       }
     },
     include: {
