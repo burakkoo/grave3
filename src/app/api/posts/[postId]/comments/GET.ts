@@ -9,14 +9,19 @@ import { getServerUser } from '@/lib/getServerUser';
 import { toGetComment } from '@/lib/prisma/toGetComment';
 import { selectComment } from '@/lib/prisma/selectComment';
 
-export async function GET(request: Request, { params }: { params: { postId: string } }) {
+export async function GET(
+  request: Request,
+  { params }: { params: { postId: string } }
+) {
+  const [user] = await getServerUser();
+
   try {
-    const [user] = await getServerUser();
-    const postId = parseInt(params.postId);
+    // Keep postId as string, don't parse to number
+    const postId = params.postId;
 
     const comments = await prisma.comment.findMany({
       where: {
-        postId,
+        postId, // Use string postId
         parentId: null, // Only fetch top-level comments
       },
       orderBy: {
@@ -61,9 +66,6 @@ export async function GET(request: Request, { params }: { params: { postId: stri
     return NextResponse.json(transformedComments);
   } catch (error) {
     console.error('Error fetching comments:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch comments' },
-      { status: 500 }
-    );
+    return NextResponse.json(null, { status: 500 });
   }
 }
