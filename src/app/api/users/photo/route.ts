@@ -8,7 +8,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const formData = await request.formData();
+  // Clone the request before reading formData
+  const clonedRequest = request.clone();
+  const formData = await clonedRequest.formData();
   const toUpdate = formData.get('toUpdate') as 'profilePhoto' | 'coverPhoto';
 
   return useUpdateProfileAndCoverPhoto({
