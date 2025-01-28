@@ -42,16 +42,25 @@ export default function ProfilePhoto({
         // Update temp URL with the uploaded URL
         setTempPhotoUrl(uploadedUrl);
         
-        // Invalidate and refetch queries
+        // Force immediate cache update and refetch
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['user'] }),
-          queryClient.refetchQueries({ queryKey: ['user'] })
+          queryClient.refetchQueries({ 
+            queryKey: ['user'],
+            type: 'active',
+            exact: false 
+          })
         ]);
 
-        // Wait a bit longer before clearing the temp URL
-        setTimeout(() => {
+        // Keep showing the new photo while cache updates
+        setTimeout(async () => {
+          // Do one final refetch to ensure we have the latest data
+          await queryClient.refetchQueries({ 
+            queryKey: ['user'],
+            type: 'active'
+          });
           setTempPhotoUrl(null);
-        }, 1000); // Increased timeout to ensure new photo is loaded
+        }, 1500);
       }
     } catch (error) {
       setTempPhotoUrl(null);
@@ -79,15 +88,9 @@ export default function ProfilePhoto({
           src={tempPhotoUrl || photoUrl || ''} 
           alt="Profile photo" 
           className="absolute h-full w-full rounded-full border-4 border-white object-cover"
-          onLoad={() => {
-            if (!tempPhotoUrl) return; // Only handle load for temp URL
-            
-            // Ensure the new image is loaded before clearing temp URL
-            const img = new Image();
-            img.src = photoUrl || '';
-            img.onload = () => {
-              setTimeout(() => setTempPhotoUrl(null), 100);
-            };
+          onError={() => {
+            // If there's an error loading the new photo, clear temp URL
+            setTempPhotoUrl(null);
           }}
         />
       )}
