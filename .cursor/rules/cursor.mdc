@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+---
+
+# Your rule content
+
+[.cursorrules](mdc:.cursorrules)
+[Instructions.md](mdc:Instructions.md)
+[functions.md](mdc:functions.md)

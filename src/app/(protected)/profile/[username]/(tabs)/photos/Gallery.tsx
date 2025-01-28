@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ButtonNaked } from '@/components/ui/ButtonNaked';
 import SvgTrash from '@/svg_components/Trash';
 import { useEffect, useState } from 'react';
+import { GalleryItem } from './GalleryItem';
 
 interface GalleryProps {
   visualMedia: GetVisualMedia[];
@@ -41,10 +42,20 @@ export function Gallery({ visualMedia: initialVisualMedia, profileId }: GalleryP
   });
 
   const openVisualMediaModal = (initialSlide: number) => {
+    const currentMedia = visualMedia[initialSlide];
+    console.log('Opening media:', currentMedia); // Debug log
+    
     showVisualMediaModal({ 
-      visualMedia, 
+      visualMedia: visualMedia.map((media: GetVisualMedia) => ({
+        ...media,
+        type: media.type,
+        autoPlay: false,
+        controls: true,
+        muted: false,
+        loop: true,
+      })),
       initialSlide,
-      profileId 
+      profileId
     });
   };
 
@@ -244,21 +255,11 @@ export function Gallery({ visualMedia: initialVisualMedia, profileId }: GalleryP
               </div>
             )}
 
-            <div className="aspect-square">
-              <div 
-                onClick={() => !isSelectionMode && openVisualMediaModal(i)}
-                onKeyDown={(e) => !isSelectionMode && e.key === 'Enter' && openVisualMediaModal(i)}
-                className="cursor-pointer w-full h-full focus:outline-none focus:ring-2 focus:ring-primary"
-                role="button"
-                tabIndex={0}
-              >
-                <img 
-                  src={media.url} 
-                  alt={media.caption || 'Photo'} 
-                  className="object-cover w-full h-full"
-                />
-              </div>
-            </div>
+            <GalleryItem
+              type={media.type}
+              url={media.url}
+              onClick={() => !isSelectionMode && openVisualMediaModal(i)}
+            />
 
             {media.caption && (
               <div className="p-2 border-t border-border">

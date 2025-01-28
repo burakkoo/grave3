@@ -1,10 +1,11 @@
 'use client';
 
-import { InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { InfiniteData } from '@tanstack/react-query';
 import { chunk } from 'lodash';
 import { POSTS_PER_PAGE } from '@/constants';
 import { useSession } from 'next-auth/react';
-import { PostIds } from '@/types/definitions';
+import { PostIds, PostIdsArray } from '@/types/definitions';
 import { useErrorNotifier } from '../useErrorNotifier';
 
 export function useDeletePostMutation() {
@@ -15,40 +16,64 @@ export function useDeletePostMutation() {
 
   const deleteMutation = useMutation({
     mutationFn: async ({ postId }: { postId: number }) => {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const res = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete post.');
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to delete post');
       }
 
-      return (await response.json()) as { id: number };
+      return postId;
     },
-    onMutate: async ({ postId }) => {
-      await qc.cancelQueries({ queryKey });
-      const previousData = qc.getQueryData(queryKey);
+    onSuccess: (deletedPostId) => {
+      // Update all post-related queries that might contain this post
+      qc.invalidateQueries({ queryKey: ['posts', deletedPostId] });
 
-      qc.setQueryData<InfiniteData<PostIds[]>>(
-        queryKey,
-        (oldData): InfiniteData<PostIds[]> | undefined => {
-          if (!oldData) return undefined;
+      // Update any infinite queries that might contain this post
+      const possibleQueries = qc.getQueriesData<InfiniteData<PostIdsArray>>({
+        predicate: (query) => {
+          // Match queries that start with 'posts' or contain 'posts' in their key
+          const queryKey = query.queryKey;
+          return (
+            queryKey[0] === 'posts' || 
+            (Array.isArray(queryKey) && queryKey.includes('posts'))
+          );
+        },
+      });
 
-          const updatedPosts = oldData.pages
-            .flat()
-            .filter((post) => post.id !== postId);
-          
+      // Update each matching query's cache
+      possibleQueries.forEach(([queryKey, oldData]) => {
+        if (!oldData?.pages) return;
+
+        qc.setQueryData<InfiniteData<PostIdsArray>>(queryKey, (old) => {
+          if (!old?.pages) return old;
+
+          // Remove the deleted post from all pages
+          const newPages = old.pages.map(page => 
+            Array.isArray(page) ? page.filter(post => post.id !== deletedPostId) : []
+          ).filter(page => page.length > 0); // Remove empty pages
+
+          if (newPages.length === 0) {
+            return {
+              pages: [],
+              pageParams: []
+            };
+          }
+
+          // Flatten and rechunk to maintain consistent page sizes
+          const flattened = newPages.flat();
+          const rechunked = chunk(flattened, POSTS_PER_PAGE);
+
           return {
-            pages: [updatedPosts],
-            pageParams: oldData.pageParams,
+            pages: rechunked,
+            pageParams: old.pageParams.slice(0, rechunked.length)
           };
-        }
-      );
-
-      return { previousData };
+        });
+      });
     },
-    onError: (error, _, context) => {
-      qc.setQueryData(queryKey, context?.previousData);
+    onError: (error) => {
       notifyError(error);
     },
   });

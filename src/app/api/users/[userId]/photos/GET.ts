@@ -13,7 +13,9 @@ export async function GET(request: Request, { params }: { params: { userId: stri
     const visualMedia = await prisma.visualMedia.findMany({
       where: {
         userId: params.userId,
-        type: 'PHOTO',
+        type: {
+          in: ['PHOTO', 'VIDEO']  // Include both photos and videos
+        },
         post: {
           ApprovalStatus: true
         }
@@ -35,9 +37,9 @@ export async function GET(request: Request, { params }: { params: { userId: stri
 
     return NextResponse.json(transformedMedia);
   } catch (error) {
-    console.error('Error fetching photos:', error);
+    console.error('Error fetching media:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch photos' },
+      { error: 'Failed to fetch media' },
       { status: 500 }
     );
   }

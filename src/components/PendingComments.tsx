@@ -157,20 +157,6 @@ export function PendingComments({ userId }: { userId: string }) {
     },
   });
 
-  const handleRepliesVisibility = useCallback(
-    ({ commentId, shown }: { commentId: number; shown: boolean }) => {
-      qc.setQueryData<GetComment[]>(queryKey, (oldComments) => {
-        if (!oldComments) return oldComments;
-        return oldComments.map(comment => 
-          comment.id === commentId 
-            ? { ...comment, repliesShown: shown }
-            : comment
-        );
-      });
-    },
-    [qc, queryKey]
-  );
-
   const {
     data: pendingComments,
     isPending,
@@ -250,7 +236,6 @@ export function PendingComments({ userId }: { userId: string }) {
           <Comment
             key={comment.id}
             {...comment}
-            setRepliesVisibility={handleRepliesVisibility}
             queryKey={queryKey}
             isOwnComment={session?.user?.id === comment.user?.id}
             profileOwnerId={userId}

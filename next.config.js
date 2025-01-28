@@ -13,6 +13,10 @@ const nextConfig = {
         port: '',
       },
     ],
+    domains: [
+      'graveapp-memoria.s3.eu-north-1.amazonaws.com'
+      // ... any other domains you have
+    ],
   },
   eslint: {
     ignoreDuringBuilds: true,

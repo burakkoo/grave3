@@ -8,33 +8,48 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ButtonNaked } from './ui/ButtonNaked';
 import SvgTrash from '@/svg_components/Trash';
 import SvgClose from '@/svg_components/Close';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface VisualMediaModalProps {
-  visualMedia: GetVisualMedia[];
+  visualMedia: (GetVisualMedia & {
+    autoPlay?: boolean;
+    controls?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+  })[];
   initialSlide: number;
   profileId: string;
-  onClose: () => void;
+  onCloseRef: React.MutableRefObject<(() => void) | undefined>;
+  isVideo?: boolean;
 }
 
-export function VisualMediaModal({ visualMedia, initialSlide, profileId, onClose }: VisualMediaModalProps) {
+export function VisualMediaModal({ visualMedia, initialSlide, profileId, onCloseRef, isVideo }: VisualMediaModalProps) {
   const [currentSlide, setCurrentSlide] = useState(initialSlide);
   const { data: session } = useSession();
   const { confirm } = useDialogs();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
+  // Add debug logging
+  useEffect(() => {
+    console.log('Current media:', visualMedia[currentSlide]);
+    console.log('Is video?:', visualMedia[currentSlide].type === 'VIDEO');
+  }, [currentSlide, visualMedia]);
+
   // Handle escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        onCloseRef.current?.();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onCloseRef]);
+
+  // Add video ref to control playback
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const deletePhotoMutation = useMutation({
     mutationFn: async (photoUrl: string) => {
@@ -58,7 +73,7 @@ export function VisualMediaModal({ visualMedia, initialSlide, profileId, onClose
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['profile', profileId] });
       showToast({ title: 'Photo deleted successfully', type: 'success' });
-      onClose(); // Close modal after successful deletion
+      onCloseRef.current?.(); // Close modal after successful deletion
     },
     onError: (error: Error) => {
       showToast({ 
@@ -82,7 +97,18 @@ export function VisualMediaModal({ visualMedia, initialSlide, profileId, onClose
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      onClose();
+      onCloseRef.current?.();
+    }
+  };
+
+  const handleVideoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+      } else {
+        videoRef.current.pause();
+      }
     }
   };
 
@@ -95,7 +121,7 @@ export function VisualMediaModal({ visualMedia, initialSlide, profileId, onClose
       aria-labelledby="modal-title"
     >
       <div 
-        className="relative bg-background/95 backdrop-blur-sm rounded-2xl overflow-hidden max-w-2xl w-full shadow-2xl"
+        className="relative bg-background/95 backdrop-blur-sm rounded-2xl overflow-hidden max-w-4xl w-full shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header with close and delete buttons */}
@@ -113,7 +139,7 @@ export function VisualMediaModal({ visualMedia, initialSlide, profileId, onClose
           )}
           
           <ButtonNaked
-            onPress={onClose}
+            onPress={onCloseRef.current?.bind(null)}
             className="flex items-center justify-center w-9 h-9 text-white/90 hover:text-white hover:bg-white/10 rounded-full ml-auto transition-all"
             aria-label="Close modal"
           >
@@ -121,13 +147,33 @@ export function VisualMediaModal({ visualMedia, initialSlide, profileId, onClose
           </ButtonNaked>
         </div>
 
-        {/* Image container */}
+        {/* Media container */}
         <div className="relative bg-black/10">
-          <img 
-            src={visualMedia[currentSlide].url} 
-            alt={visualMedia[currentSlide].caption || 'Photo'} 
-            className="object-contain w-full max-h-[80vh] mx-auto"
-          />
+          {visualMedia[currentSlide].type === 'VIDEO' ? (
+            <video
+              ref={videoRef}
+              key={visualMedia[currentSlide].url}
+              className="object-contain w-full max-h-[80vh] mx-auto cursor-pointer"
+              controls
+              playsInline
+              loop
+              preload="auto"
+              controlsList="nodownload"
+              onClick={handleVideoClick}
+            >
+              <source 
+                src={visualMedia[currentSlide].url} 
+                type="video/mp4"
+              />
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <img 
+              src={visualMedia[currentSlide].url} 
+              alt={visualMedia[currentSlide].caption || 'Photo'} 
+              className="object-contain w-full max-h-[80vh] mx-auto"
+            />
+          )}
         </div>
 
         {/* Caption */}

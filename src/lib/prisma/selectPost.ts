@@ -6,7 +6,16 @@ export const selectPost = (userId: string | undefined) => ({
   content: true,
   createdAt: true,
   ...includeUserSummary(),
-  visualMedia: true,
+  visualMedia: {
+    select: {
+      id: true,
+      type: true,
+      fileName: true,
+      uploadedAt: true,
+      userId: true,
+      postId: true,
+    },
+  },
   PostedBy: true,
   Relation: true,
   /**

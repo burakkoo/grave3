@@ -20,7 +20,9 @@ async function getVisualMedia(username: string) {
   const visualMedia = await prisma.visualMedia.findMany({
     where: {
       userId: profile.id,
-      type: 'PHOTO',
+      type: {
+        in: ['PHOTO', 'VIDEO']  // Include both photos and videos
+      },
       post: {
         ApprovalStatus: true
       }

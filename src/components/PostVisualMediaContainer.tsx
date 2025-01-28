@@ -1,59 +1,110 @@
+'use client';
+
 import { cn } from '@/lib/cn';
 import { isOdd } from '@/lib/isOdd';
 import { useVisualMediaModal } from '@/hooks/useVisualMediaModal';
 import { GetVisualMedia } from '@/types/definitions';
-import { PostVisualMedia } from './PostVisualMedia';
+import { useState } from 'react';
 
-export function PostVisualMediaContainer({ 
-  visualMedia, 
-  profileId,
-  userId 
-}: { 
-  visualMedia: GetVisualMedia[]; 
+interface PostVisualMediaContainerProps {
+  visualMedia: GetVisualMedia[];
   profileId: string;
   userId: string;
-}) {
+  autoPlay?: boolean;
+  muted?: boolean;
+  controls?: boolean;
+}
+
+export function PostVisualMediaContainer({
+  visualMedia,
+  profileId,
+  userId,
+  autoPlay = false,
+  muted = true,
+  controls = false,
+}: PostVisualMediaContainerProps) {
   const { showVisualMediaModal } = useVisualMediaModal();
   const len = visualMedia.length;
+  const [isError, setIsError] = useState(false);
 
   const isOwnProfile = userId === profileId;
 
+  const renderMediaItem = (item: GetVisualMedia, index: number) => {
+    const isVideo = item.type === 'VIDEO';
+    const className = cn(
+      'w-full h-full object-cover cursor-pointer',
+      len > 1 ? 'aspect-square' : 'max-h-[32rem]',
+      'rounded-lg'
+    );
+
+    const handleClick = () => {
+      showVisualMediaModal({ 
+        visualMedia, 
+        initialSlide: index,
+        profileId
+      });
+    };
+
+    if (isVideo) {
+      return (
+        <div className="relative group" onClick={handleClick}>
+          <video
+            className={className}
+            autoPlay={autoPlay}
+            muted={muted}
+            controls={controls}
+            loop
+            playsInline
+            onError={() => setIsError(true)}
+          >
+            <source src={item.url} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="p-2 rounded-full bg-black/50">
+              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <img 
+        src={item.url} 
+        alt={item.caption || 'Post media'}
+        className={className}
+        onClick={handleClick}
+        onError={() => setIsError(true)}
+      />
+    );
+  };
+
+  if (isError) {
+    return (
+      <div className="w-full h-48 flex items-center justify-center rounded-lg bg-muted">
+        <p className="text-sm text-muted-foreground">Media unavailable</p>
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
-      'relative grid w-full',
-      len > 2 ? 'grid-cols-2' : 'grid-cols-1',
-      'gap-1 rounded-lg overflow-hidden'
+      'grid gap-1',
+      len === 1 && 'grid-cols-1',
+      len === 2 && 'grid-cols-2',
+      len > 2 && 'grid-cols-2 grid-rows-2',
     )}>
-      {visualMedia.length > 0 &&
-        visualMedia.map((item, i) => {
-          if (i > 3) return false;
-          return (
-            <PostVisualMedia
-              key={i}
-              type={item.type}
-              url={item.url}
-              // Only use aspect-square for grid layouts with multiple images
-              height={len > 1 ? 'aspect-square' : 'max-h-[32rem] h-auto'}
-              // If single image or first image in odd-numbered set < 4, take full width
-              colSpan={isOdd(len) && len < 4 && i === 0 ? 2 : 1}
-              onClick={() => showVisualMediaModal({ 
-                visualMedia, 
-                initialSlide: i,
-                profileId,
-                isOwnProfile
-              })}
-              // Pass whether this is a single image
-              isSingleImage={len === 1}
-            />
-          );
-        })}
-      {len > 4 && (
-        <div className="absolute left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] bg-black/50 rounded-full p-2">
-          <p className="text-3xl font-semibold text-white">
-            +{len - 4}
-          </p>
+      {visualMedia.map((item, index) => (
+        <div key={item.url} className={cn(
+          'relative overflow-hidden rounded-lg',
+          len === 1 ? 'col-span-1' : '',
+          len > 2 && index === 0 ? 'col-span-2 row-span-1' : ''
+        )}>
+          {renderMediaItem(item, index)}
         </div>
-      )}
+      ))}
     </div>
   );
 }

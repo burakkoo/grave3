@@ -20,7 +20,19 @@ export async function GET(request: Request, { params }: { params: { postId: stri
     where: {
       id: parseInt(params.postId),
     },
-    select: selectPost(user?.id),
+    select: {
+      ...selectPost(user?.id),
+      visualMedia: {
+        select: {
+          id: true,
+          type: true,
+          fileName: true,
+          uploadedAt: true,
+          userId: true,
+          postId: true
+        }
+      }
+    }
   });
 
   if (res === null) return NextResponse.json(null);

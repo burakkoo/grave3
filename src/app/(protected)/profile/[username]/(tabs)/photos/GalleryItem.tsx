@@ -33,11 +33,15 @@ export function GalleryItem({ type, url, onClick }: { type: VisualMediaType; url
           <Play
             width={36}
             height={36}
-            className="absolute left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] stroke-yellow-100 transition-transform group-hover:scale-125"
+            className="absolute left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] z-10 stroke-white drop-shadow-lg transition-transform group-hover:scale-125"
           />
-          <video className="h-full w-full object-cover">
+          <video 
+            className="h-full w-full object-cover"
+            preload="metadata"
+            playsInline
+            muted
+          >
             <source src={url} type="video/mp4" />
-            Your browser does not support the video tag.
           </video>
         </>
       )}

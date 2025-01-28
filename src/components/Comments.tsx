@@ -137,23 +137,6 @@ export function Comments({ postId, profileOwnerId }: { postId: number; profileOw
     );
   }, [comments, session?.user?.id, profileOwnerId]);
 
-  const setRepliesVisibility = useCallback(
-    ({ commentId, shown }: { commentId: number; shown: boolean }) => {
-      qc.setQueryData<GetComment[]>(queryKey, (oldComments) => {
-        if (!oldComments) return oldComments;
-        const newComments = [...oldComments];
-        const index = newComments.findIndex((comment) => comment.id === commentId);
-        const oldComment = newComments[index];
-        newComments[index] = {
-          ...oldComment,
-          repliesShown: shown,
-        };
-        return newComments;
-      });
-    },
-    [qc, queryKey],
-  );
-
   const createCommentMutation = useMutation({
     mutationFn: async ({ content }: { content: string }) => {
       const response = await fetch(`/api/posts/${postId}/comments`, {
@@ -177,16 +160,22 @@ export function Comments({ postId, profileOwnerId }: { postId: number; profileOw
       
       if (previousComments && session?.user) {
         const optimisticComment = {
-          id: Date.now(), // Temporary ID
+          id: Date.now(),
           content,
           createdAt: new Date().toISOString(),
-          user: session.user,
-          isApproved: session.user.id === profileOwnerId,
-          repliesShown: false,
-          _count: { replies: 0 }
-        };
+          userId: session.user.id,
+          postId,
+          user: {
+            id: session.user.id,
+            name: session.user.name || '',
+            username: session.user.name || ''
+          },
+          PostedBy: session.user.name || '',
+          Relation: null,
+          isApproved: session.user.id === profileOwnerId
+        } as GetComment;
         
-        qc.setQueryData<GetComment[]>(queryKey, [...previousComments, optimisticComment as GetComment]);
+        qc.setQueryData<GetComment[]>(queryKey, [...previousComments, optimisticComment]);
       }
       
       return { previousComments };
@@ -246,10 +235,7 @@ export function Comments({ postId, profileOwnerId }: { postId: number; profileOw
                 exit="exit">
                 <Comment
                   {...comment}
-                  {...{
-                    setRepliesVisibility,
-                    queryKey,
-                  }}
+                  queryKey={queryKey}
                   isOwnComment={comment.user ? session?.user?.id === comment.user.id : false}
                   profileOwnerId={profileOwnerId}
                   postId={postId}

@@ -10,7 +10,12 @@ export function VisualMediaDialog({ children, ...rest }: VisualMediaDialogProps)
   const { dialogProps } = useDialog(rest, ref);
 
   return (
-    <div {...dialogProps} ref={ref} className="h-screen w-full">
+    <div 
+      {...dialogProps} 
+      ref={ref} 
+      className="h-screen w-full"
+      onClick={(e) => e.stopPropagation()}
+    >
       {children}
     </div>
   );

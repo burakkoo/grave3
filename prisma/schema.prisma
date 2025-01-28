@@ -118,24 +118,24 @@ model Follow {
 }
 
 model Post {
-  id          Int           @id @default(autoincrement())
-  content     String?
-  PostedBy    String?
-  Relation    String?
-  createdAt   DateTime      @default(now())
-  visualMedia VisualMedia[]
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  postLikes   PostLike[]
-  comments    Comment[]
-  ApprovalStatus     Boolean       @default(false)
+  id             String   @id @default(cuid())
+  userId         String
+  approvalStatus Boolean  @default(false)
+  content        String?
+  PostedBy       String?
+  Relation       String?
+  createdAt      DateTime  @default(now())
+  visualMedia    VisualMedia[]
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postLikes      PostLike[]
+  comments       Comment[]
 }
 
 model PostLike {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    Int
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
   userId    String   // Simple string field for anonymous likes
   
   @@unique([userId, postId])
@@ -146,7 +146,7 @@ model Comment {
   content      String
   createdAt    DateTime      @default(now())
   userId       String?
-  postId       Int
+  postId       String
   parentId     Int?
   PostedBy     String?
   Relation     String?
@@ -179,11 +179,12 @@ model VisualMedia {
   id         Int             @id @default(autoincrement())
   type       VisualMediaType @default(PHOTO)
   fileName   String
+  url        String?
   uploadedAt DateTime        @default(now())
   user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
   post       Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId     Int
+  postId     String
 }
 
 // This Activity model is similar to this approach: https://stackoverflow.com/a/1766371/8434369

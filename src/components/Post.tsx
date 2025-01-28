@@ -200,7 +200,10 @@ export const Post = memo(
                 <PostVisualMediaContainer 
                   visualMedia={post.visualMedia} 
                   profileId={post.user.id}
-                  userId={session?.user?.id ?? ''} 
+                  userId={session?.user?.id ?? ''}
+                  autoPlay={false}
+                  muted={true}
+                  controls={true}
                 />
               </div>
             )}

@@ -1,4 +1,4 @@
-import { VisualMediaType, User, Follow, ActivityType, Gender, VisualMedia } from '@prisma/client';
+import { VisualMediaType, User, Follow, ActivityType, Gender } from '@prisma/client';
 
 type UserSummary = Pick<User, 'id' | 'username' | 'name' | 'profilePhoto'>;
 /**
@@ -64,11 +64,6 @@ export interface FindPostResult {
   createdAt: Date;
   PostedBy: string | null;
   Relation: string | null;
-  /**
-   * Use `postLikes` to store the <PostLike>'s id of the user to the Post.
-   * If there is a <PostLike> id, that means the user requesting has
-   * liked the Post.
-   */
   postLikes: {
     id: number;
   }[];
@@ -127,19 +122,10 @@ export interface FindCommentResult {
   createdAt: Date;
   userId: string | null;
   postId: number;
-  parentId: number | null;
-  user: UserSummary;
-  /**
-   * Use `commentLikes` to store the <CommentLike>'s id of the user to the Comment.
-   * If there is a <CommentLike> id, that means the user requesting has
-   * liked the Comment.
-   */
-  commentLikes: {
-    id: number;
-  }[];
-  _count: {
-    commentLikes: number;
-    replies: number;
+  user: {
+    id: string;
+    name: string;
+    username: string;
   };
 }
 
@@ -154,7 +140,6 @@ export type GetComment = {
   createdAt: string;
   userId: string | null;
   postId: number;
-  parentId: number | null;
   PostedBy: string | null;
   Relation: string | null;
   isApproved: boolean;
@@ -162,15 +147,7 @@ export type GetComment = {
     id: string;
     name: string;
     username: string;
-    profilePhoto: string | null;
   } | null;
-  _count: {
-    commentLikes: number;
-    replies: number;
-  };
-  isLiked: boolean;
-  replies?: GetComment[];
-  repliesShown?: boolean;
 };
 
 export interface DiscoverFilters {
@@ -215,4 +192,15 @@ export interface ShowModalOptions {
   initialSlide: number;
   profileId: string;
   isOwnProfile?: boolean;
+}
+
+// Move this interface to the top level and enhance it
+export interface VisualMedia {
+  id: number;
+  type: VisualMediaType;
+  fileName: string;
+  uploadedAt: Date;
+  userId: string;
+  postId: number;
+  url?: string; // Make url optional for Prisma results
 }

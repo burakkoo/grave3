@@ -72,35 +72,13 @@ export async function useUpdateProfileAndCoverPhoto({
     
     await uploadObject(buffer, fileName, fileExtension);
 
-    if (toUpdate === 'profilePhoto') {
-      // Create post and visual media only for profile photos
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: user.id },
-          data: { profilePhoto: fileName }
-        }),
-        prisma.post.create({
-          data: {
-            userId: user.id,
-            content: '#NewProfilePhoto',
-            ApprovalStatus: true,
-            visualMedia: {
-              create: {
-                userId: user.id,
-                fileName,
-                type: 'PHOTO',
-              }
-            }
-          }
-        })
-      ]);
-    } else {
-      // For cover photos, just update the user record
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { coverPhoto: fileName }
-      });
-    }
+    // Simply update the user record for both profile and cover photos
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { 
+        [toUpdate === 'profilePhoto' ? 'profilePhoto' : 'coverPhoto']: fileName 
+      }
+    });
 
     return NextResponse.json({ 
       uploadedTo: fileNameToUrl(fileName),

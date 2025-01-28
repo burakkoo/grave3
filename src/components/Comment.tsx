@@ -10,8 +10,7 @@ import SvgTrash from '@/svg_components/Trash';
 import { useDeleteCommentMutation } from '@/hooks/mutations/useDeleteCommentMutation';
 import SvgCheck from '@/svg_components/Check';
 
-type CommentProps = GetComment & {
-  setRepliesVisibility: ({ commentId, shown }: { commentId: number; shown: boolean }) => void;
+export interface CommentProps extends GetComment {
   queryKey: (string | number)[];
   isOwnComment?: boolean;
   profileOwnerId: string;

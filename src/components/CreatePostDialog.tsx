@@ -29,6 +29,10 @@ const ASPECT_RATIOS = {
   MIN_PORTRAIT: 4 / 5,      // 4:5 (minimum width:height ratio)
 };
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
+const MAX_VIDEO_SIZE_MB = 100; // 100MB max video size
+
 function resizeImage(file: File): Promise<Blob> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -162,30 +166,58 @@ export function CreatePostDialog({
     
     const processedMedia = await Promise.all(
       filesArr.map(async (file) => {
-        if (file.type.startsWith('image/')) {
+        // Validate file type
+        if (!ALLOWED_IMAGE_TYPES.includes(file.type) && !ALLOWED_VIDEO_TYPES.includes(file.type)) {
+          showToast({
+            title: "Invalid file type. Please upload only images (JPG, PNG, WebP, GIF) or videos (MP4, MOV, WebM)",
+            type: "error"
+          });
+          return null;
+        }
+
+        // Handle images
+        if (ALLOWED_IMAGE_TYPES.includes(file.type)) {
           const resizedBlob = await resizeImage(file);
           return {
             type: 'PHOTO' as const,
             url: URL.createObjectURL(resizedBlob),
             caption: null,
           };
-        } else {
+        } 
+        // Handle videos
+        else if (ALLOWED_VIDEO_TYPES.includes(file.type)) {
+          // Check video size
+          if (file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) {
+            showToast({
+              title: `Video must be smaller than ${MAX_VIDEO_SIZE_MB}MB`,
+              type: "error"
+            });
+            return null;
+          }
+
           return {
             type: 'VIDEO' as const,
             url: URL.createObjectURL(file),
             caption: null,
           };
         }
+
+        return null;
       })
     );
 
+    // Filter out null values and add valid media
+    const validMedia = processedMedia.filter((media): media is { type: "PHOTO" | "VIDEO"; url: string; caption: null } => 
+      media !== null && (media.type === "PHOTO" || media.type === "VIDEO")
+    ) as GetVisualMedia[];
+    
     setVisualMedia((prev) => {
-      const newMedia = [...prev, ...processedMedia];
+      const newMedia = [...prev, ...validMedia];
       return newMedia.slice(0, MAX_VISIBLE_MEDIA);
     });
     
     e.target.value = '';
-  }, [visualMedia]);
+  }, [visualMedia, showToast]);
 
   const handleClickPostButton = useCallback(async () => {
     if (isPosting) return;
@@ -390,7 +422,14 @@ export function CreatePostDialog({
                         <video
                           src={media.url}
                           className="absolute inset-0 h-full w-full rounded-md object-contain bg-gray-900"
-                        />
+                          controls
+                          controlsList="nodownload"
+                          playsInline
+                          preload="metadata"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
                       )}
                       <button
                         onClick={() => setVisualMedia(prev => prev.filter((_, i) => i !== index))}

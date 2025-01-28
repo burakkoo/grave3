@@ -4,6 +4,16 @@ import React, { forwardRef, useCallback, useRef } from 'react';
 import SvgImage from '@/svg_components/Image';
 import { ButtonNaked } from './ui/ButtonNaked';
 
+const ACCEPTED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'video/mp4',
+  'video/quicktime',
+  'video/webm'
+].join(',');
+
 export const CreatePostOptions = forwardRef<
   HTMLInputElement,
   {
@@ -59,7 +69,7 @@ export const CreatePostOptions = forwardRef<
           type="file"
           ref={assignRef}
           onChange={handleChange}
-          accept="image/*,video/*"
+          accept={ACCEPTED_FILE_TYPES}
           className="hidden"
           multiple
           disabled={isMediaLimitReached}

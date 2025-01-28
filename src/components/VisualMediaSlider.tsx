@@ -10,7 +10,7 @@ import SvgTrash from '@/svg_components/Trash';
 import SvgClose from '@/svg_components/Close';
 import SvgChevronLeft from '@/svg_components/ChevronLeft';
 import SvgChevronRight from '@/svg_components/ChevronRight';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface VisualMediaSliderProps {
   visualMedia: GetVisualMedia[];
@@ -30,6 +30,9 @@ export default function VisualMediaSlider({
   const { confirm } = useDialogs();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+
+  // Add video ref
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const handlePrevSlide = useCallback(() => {
     if (currentSlide > 0) {
@@ -105,6 +108,17 @@ export default function VisualMediaSlider({
     }
   };
 
+  const handleVideoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 z-50 bg-transparent hover:bg-black/5 transition-colors flex items-center justify-center p-4 cursor-pointer"
@@ -168,13 +182,33 @@ export default function VisualMediaSlider({
           </div>
         </div>
 
-        {/* Image */}
+        {/* Media container */}
         <div className="aspect-square bg-background/5">
-          <img 
-            src={visualMedia[currentSlide].url} 
-            alt={visualMedia[currentSlide].caption || 'Photo'} 
-            className="object-contain w-full h-full"
-          />
+          {visualMedia[currentSlide].type === 'VIDEO' ? (
+            <video
+              ref={videoRef}
+              src={visualMedia[currentSlide].url}
+              className="object-contain w-full h-full cursor-pointer"
+              controls
+              playsInline
+              loop
+              preload="auto"
+              controlsList="nodownload"
+              onClick={handleVideoClick}
+            >
+              <source 
+                src={visualMedia[currentSlide].url} 
+                type="video/mp4"
+              />
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <img 
+              src={visualMedia[currentSlide].url} 
+              alt={visualMedia[currentSlide].caption || 'Photo'} 
+              className="object-contain w-full h-full"
+            />
+          )}
         </div>
 
         {/* Caption */}
