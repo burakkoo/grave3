@@ -64,19 +64,20 @@ export default function CoverPhoto({
       const containerHeight = containerRef.current.offsetHeight;
       const imageHeight = imageRef.current.offsetHeight;
       
-      // Ensure image fills container width
+      // Ensure image fills container width and maintains proper height
       if (imageRef.current) {
         imageRef.current.style.width = '100%';
-        imageRef.current.style.height = 'auto';
-        // Ensure minimum height is at least container height
-        imageRef.current.style.minHeight = `${containerHeight}px`;
+        // Force the image to be taller than the container to allow for movement
+        const minRequiredHeight = containerHeight * 1.5;
+        imageRef.current.style.minHeight = `${minRequiredHeight}px`;
+        imageRef.current.style.objectFit = 'cover';
       }
 
-      // Calculate bounds
-      const minY = -(imageHeight - containerHeight);
+      // Calculate bounds - adjust the minY to prevent too much upward movement
+      const minY = Math.min(-(imageHeight * 0.3), -(imageHeight - containerHeight));
       const maxY = 0;
       
-      // Calculate new position
+      // Calculate new position with tighter bounds
       const newY = Math.min(maxY, Math.max(minY, clientY - dragStartY.current));
       setPositionY(newY);
     }
@@ -107,7 +108,7 @@ export default function CoverPhoto({
 
   return (
     <div
-      className="relative h-full w-full mx-auto max-w-2xl"
+      className="relative h-full w-full mx-auto max-w-2xl overflow-hidden"
       ref={containerRef}
       onMouseMove={handleDragMove}
       onMouseUp={handleDragEnd}
@@ -126,7 +127,8 @@ export default function CoverPhoto({
           ref={imageRef}
           style={{
             transform: `translateY(${positionY}px)`,
-            minHeight: '100%', // Ensure image is at least as tall as container
+            minHeight: '150%', // Make image 50% taller than container
+            objectPosition: 'center',
           }}
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
