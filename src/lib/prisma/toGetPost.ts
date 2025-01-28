@@ -6,13 +6,13 @@ import { FindPostResult, GetPost, GetVisualMedia } from '@/types/definitions';
 import { convertMentionUsernamesToIds } from '../convertMentionUsernamesToIds';
 import { fileNameToUrl } from '../s3/fileNameToUrl';
 
-export async function toGetPost(findPostResult: FindPostResult): Promise<GetPost> {
+export async function toGetPost(post: FindPostResult): Promise<GetPost> {
   /**
    * Exclude the `postLikes` property as this is not needed in <GetPost>,
    * it is only used to determine whether the user requesting the post
    * has liked the post or not.
    */
-  const { postLikes, content, ...rest } = findPostResult;
+  const { postLikes, content, ...rest } = post;
 
   // Convert the `@` `id` mentions back to usernames
   const { str } = await convertMentionUsernamesToIds({
@@ -27,6 +27,7 @@ export async function toGetPost(findPostResult: FindPostResult): Promise<GetPost
   }));
 
   return {
+    id: post.id,
     ...rest,
     createdAt: rest.createdAt.toISOString(),
     user: {

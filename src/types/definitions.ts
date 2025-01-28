@@ -59,7 +59,7 @@ export interface GetVisualMedia {
 
 // Use this type when finding a Post in prisma.
 export interface FindPostResult {
-  id: number;
+  id: string;
   content: string | null;
   createdAt: Date;
   PostedBy: string | null;
@@ -81,7 +81,7 @@ export interface FindPostResult {
  * <GetPost> must be the response type of GET posts route handlers.
  */
 export interface GetPost {
-  id: number;
+  id: string;
   content: string | null;
   createdAt: string;
   user: {
