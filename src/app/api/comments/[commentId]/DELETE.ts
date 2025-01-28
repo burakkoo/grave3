@@ -35,7 +35,7 @@ export async function DELETE(request: Request, { params }: { params: { commentId
       null;
   })();
 
-  await prisma.activity.delete({
+  await prisma.activity.deleteMany({
     where: {
       type,
       sourceUserId: user?.id,
