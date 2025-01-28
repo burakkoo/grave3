@@ -32,7 +32,7 @@ export async function POST(
       },
       select: {
         userId: true,
-        ApprovalStatus: true,
+        approvalStatus: true,
       },
     });
 
@@ -43,7 +43,7 @@ export async function POST(
         id: postId,
       },
       data: {
-        ApprovalStatus: true,
+        approvalStatus: true,
       },
     });
 
