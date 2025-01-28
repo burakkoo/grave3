@@ -67,19 +67,24 @@ export default function CoverPhoto({
       // Ensure image fills container width and maintains proper height
       if (imageRef.current) {
         imageRef.current.style.width = '100%';
-        // Force the image to be taller than the container to allow for movement
-        const minRequiredHeight = containerHeight * 1.5;
-        imageRef.current.style.minHeight = `${minRequiredHeight}px`;
         imageRef.current.style.objectFit = 'cover';
+        // Make sure image is tall enough to cover container
+        imageRef.current.style.minHeight = `${containerHeight}px`;
       }
 
-      // Calculate bounds - adjust the minY to prevent too much upward movement
-      const minY = Math.min(-(imageHeight * 0.3), -(imageHeight - containerHeight));
+      // Prevent dragging beyond the point where bottom edge would show
+      const minY = -Math.max(0, imageHeight - containerHeight);
       const maxY = 0;
       
-      // Calculate new position with tighter bounds
+      // Calculate new position ensuring bottom is always covered
       const newY = Math.min(maxY, Math.max(minY, clientY - dragStartY.current));
-      setPositionY(newY);
+      
+      // Additional check to prevent bottom gap
+      if (Math.abs(newY) + containerHeight > imageHeight) {
+        setPositionY(-(imageHeight - containerHeight));
+      } else {
+        setPositionY(newY);
+      }
     }
   };
 
@@ -127,7 +132,8 @@ export default function CoverPhoto({
           ref={imageRef}
           style={{
             transform: `translateY(${positionY}px)`,
-            minHeight: '150%', // Make image 50% taller than container
+            height: '100%',
+            minHeight: '100%',
             objectPosition: 'center',
           }}
           onMouseDown={handleDragStart}
