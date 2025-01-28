@@ -13,43 +13,42 @@ import { includeToComment } from '@/lib/prisma/includeToComment';
 import { toGetComment } from '@/lib/prisma/toGetComment';
 import { Prisma } from '@prisma/client';
 
-export async function POST(request: Request, { params }: { params: { postId: string } }) {
+export async function POST(
+  request: Request,
+  { params }: { params: { postId: string } }
+) {
+  const [user] = await getServerUser();
+  if (!user) return NextResponse.json({}, { status: 401 });
+  const userId = user.id;
+
   try {
-    const [user] = await getServerUser();
-    const userId = user?.id;
-    const postId = parseInt(params.postId);
-
     const body = await request.json();
-    console.log('Received body:', body); // Debug log
+    const { content } = commentWriteSchema.parse(body);
 
-    const validatedData = commentWriteSchema.parse({
-      ...body,
-      postId // Add postId to the validation data
-    });
+    // Keep postId as string, don't parse to number
+    const postId = params.postId;
 
-    // Check if commenter is profile owner before creating comment
+    // Check if user owns the post for auto-approval
     let isAutoApproved = false;
     const post = await prisma.post.findUnique({
-      where: { id: postId },
+      where: { id: postId }, // Use string ID
       select: { userId: true }
     });
 
-    // Auto-approve if the commenter is the profile owner
-    if (userId && post) {
-      isAutoApproved = post.userId === userId;
+    if (post?.userId === userId) {
+      isAutoApproved = true;
     }
-    
-    // Create comment with proper null handling
+
     const comment = await prisma.comment.create({
       data: {
-        content: validatedData.content.trim(),
-        postId,
-        userId: userId ?? null, // Use nullish coalescing for cleaner null handling
-        PostedBy: validatedData.PostedBy || null,
-        Relation: validatedData.Relation || null,
+        content,
+        userId,
+        postId, // Use string postId
         isApproved: isAutoApproved,
       },
-      include: includeToComment(userId),
+      include: {
+        user: true,
+      },
     });
 
     const transformedComment = await toGetComment(comment);
