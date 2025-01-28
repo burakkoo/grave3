@@ -64,23 +64,21 @@ export default function CoverPhoto({
   };
 
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging || !imageRef.current || !containerRef.current) return;
-    
+    if (!isDragging) return;
+    e.preventDefault();
+
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const containerHeight = containerRef.current.offsetHeight;
-    const imageHeight = imageRef.current.offsetHeight;
-    
-    // Calculate drag bounds
-    const maxDragDistance = imageHeight - containerHeight;
     const newY = clientY - dragStartY.current;
 
-    // Constrain the movement
-    const constrainedY = Math.max(-maxDragDistance, Math.min(0, newY));
-    setPositionY(constrainedY);
+    // Ensure image fills container width and maintains proper height
+    if (imageRef.current && containerRef.current) {
+      const containerHeight = containerRef.current.offsetHeight;
+      const imageHeight = imageRef.current.offsetHeight;
+      const maxDragDistance = imageHeight - containerHeight;
 
-    // Update image position immediately
-    if (imageRef.current) {
-      imageRef.current.style.transform = `translateY(${constrainedY}px)`;
+      // Constrain the movement
+      const constrainedY = Math.max(-maxDragDistance, Math.min(0, newY));
+      setPositionY(constrainedY);
     }
   };
 
@@ -103,6 +101,11 @@ export default function CoverPhoto({
         setTempPhotoUrl(uploadedUrl); // Update temp URL with uploaded URL
         setIsPhotoUploaded(true);
         setShowDragMessage(true);
+        showToast({
+          type: 'success',
+          title: 'Success',
+          message: 'Cover photo uploaded successfully. You can now adjust its position.',
+        });
       }
     } catch (error) {
       setTempPhotoUrl(null);
@@ -118,16 +121,16 @@ export default function CoverPhoto({
       setShowDragMessage(false);
       showToast({
         type: 'success',
-        title: 'Success',
-        message: 'Cover photo position saved',
+        title: 'Position Saved',
+        message: 'Cover photo position has been updated',
       });
       // Force refresh the photo URL to show the new position
-      queryClient.invalidateQueries({ queryKey: ['user'] });
+      await queryClient.invalidateQueries({ queryKey: ['user'] });
     } catch (error) {
       showToast({
         type: 'error',
         title: 'Error',
-        message: 'Failed to save position',
+        message: 'Failed to save cover photo position',
       });
     }
   };
@@ -156,26 +159,32 @@ export default function CoverPhoto({
         <img
           src={tempPhotoUrl || photoUrl || ''}
           alt="Cover"
-          className={`absolute w-full object-cover transition-transform ${
+          className={`absolute w-full object-cover ${
             isPhotoUploaded ? 'cursor-move' : ''
           }`}
           ref={imageRef}
           style={{
             transform: `translateY(${positionY}px)`,
             height: '120%',
+            width: '100%',
+            objectFit: 'cover',
             objectPosition: 'center',
             userSelect: 'none',
+            touchAction: isPhotoUploaded ? 'none' : 'auto',
             pointerEvents: isPhotoUploaded ? 'all' : 'none',
           }}
-          onMouseDown={handleDragStart}
-          onTouchStart={handleDragStart}
-          draggable="false"
+          onMouseDown={isPhotoUploaded ? handleDragStart : undefined}
+          onTouchStart={isPhotoUploaded ? handleDragStart : undefined}
+          draggable={false}
         />
       )}
 
       {/* Show drag message only after successful upload */}
       {isPhotoUploaded && showDragMessage && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+        <div 
+          className="absolute inset-0 z-10 flex items-center justify-center bg-black/50"
+          style={{ pointerEvents: 'none' }}
+        >
           <p className="text-center text-white">Drag to adjust your cover photo</p>
         </div>
       )}
@@ -200,6 +209,7 @@ export default function CoverPhoto({
               onPress={handleSavePosition}
               size="small"
               isDisabled={isPending}
+              aria-label="Save cover photo position"
             />
           ) : (
             <label>
@@ -217,6 +227,7 @@ export default function CoverPhoto({
                 onPress={openInput}
                 size="small"
                 isDisabled={isPending}
+                aria-label="Upload cover photo"
               />
             </label>
           )}

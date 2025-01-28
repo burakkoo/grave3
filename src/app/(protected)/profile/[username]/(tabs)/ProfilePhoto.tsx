@@ -8,6 +8,7 @@ import { useVisualMediaModal } from '@/hooks/useVisualMediaModal';
 import { Camera } from '@/svg_components';
 import Check from '@/svg_components/Check';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/useToast';
 
 export default function ProfilePhoto({
   isOwnProfile,
@@ -24,6 +25,7 @@ export default function ProfilePhoto({
   const { showVisualMediaModal } = useVisualMediaModal();
   const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Handle file change
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,18 +39,27 @@ export default function ProfilePhoto({
     try {
       const uploadedUrl = await handleChange(e);
       if (uploadedUrl) {
-        // Update the temp URL with the uploaded URL
+        // Update temp URL with the uploaded URL
         setTempPhotoUrl(uploadedUrl);
         
-        // Force refresh the profile data
-        await queryClient.invalidateQueries({ queryKey: ['user'] });
-        // Wait a moment before clearing the temp URL to ensure the new photo is loaded
+        // Invalidate and refetch queries
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['user'] }),
+          queryClient.refetchQueries({ queryKey: ['user'] })
+        ]);
+
+        // Wait a bit longer before clearing the temp URL
         setTimeout(() => {
           setTempPhotoUrl(null);
-        }, 500);
+        }, 1000); // Increased timeout to ensure new photo is loaded
       }
     } catch (error) {
       setTempPhotoUrl(null);
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update profile photo',
+      });
     }
   };
 
@@ -69,10 +80,14 @@ export default function ProfilePhoto({
           alt="Profile photo" 
           className="absolute h-full w-full rounded-full border-4 border-white object-cover"
           onLoad={() => {
-            // Clear tempPhotoUrl when the new image loads successfully
-            if (tempPhotoUrl) {
+            if (!tempPhotoUrl) return; // Only handle load for temp URL
+            
+            // Ensure the new image is loaded before clearing temp URL
+            const img = new Image();
+            img.src = photoUrl || '';
+            img.onload = () => {
               setTimeout(() => setTempPhotoUrl(null), 100);
-            }
+            };
           }}
         />
       )}
