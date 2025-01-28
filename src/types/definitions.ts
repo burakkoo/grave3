@@ -68,7 +68,14 @@ export interface FindPostResult {
     id: number;
   }[];
   user: UserSummary;
-  visualMedia: VisualMedia[];
+  visualMedia: {
+    id: number;
+    type: VisualMediaType;
+    fileName: string;
+    uploadedAt: Date;
+    userId: string;
+    postId: string;
+  }[];
   _count: {
     postLikes: number;
     comments: number;
@@ -201,6 +208,6 @@ export interface VisualMedia {
   fileName: string;
   uploadedAt: Date;
   userId: string;
-  postId: number;
-  url?: string; // Make url optional for Prisma results
+  postId: string;
+  url?: string;
 }
