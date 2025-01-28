@@ -16,12 +16,6 @@ export function useUpdateProfileAndCoverPhotoClient(type: 'profile' | 'cover') {
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
 
-  const openInput = () => {
-    if (inputFileRef.current) {
-      inputFileRef.current.click();
-    }
-  };
-
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
@@ -37,14 +31,15 @@ export function useUpdateProfileAndCoverPhotoClient(type: 'profile' | 'cover') {
         body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to update photo');
-      }
-
       const data = await res.json();
 
-      // Invalidate user cache to refresh data
-      await invalidateUserCache(queryClient, userId);
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update photo');
+      }
+
+      // Immediately invalidate and refetch
+      await queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      await queryClient.refetchQueries({ queryKey: ['user', userId] });
 
       showToast({
         type: 'success',
@@ -57,9 +52,8 @@ export function useUpdateProfileAndCoverPhotoClient(type: 'profile' | 'cover') {
       showToast({
         type: 'error',
         title: 'Error',
-        message: 'Failed to update photo',
+        message: error instanceof Error ? error.message : 'Failed to update photo',
       });
-      throw error;
     } finally {
       setIsPending(false);
     }
@@ -78,11 +72,15 @@ export function useUpdateProfileAndCoverPhotoClient(type: 'profile' | 'cover') {
         body: JSON.stringify({ positionY }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error('Failed to save position');
+        throw new Error(data.error || 'Failed to save position');
       }
 
-      await invalidateUserCache(queryClient, userId);
+      // Immediately invalidate and refetch
+      await queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      await queryClient.refetchQueries({ queryKey: ['user', userId] });
 
       showToast({
         type: 'success',
@@ -93,10 +91,16 @@ export function useUpdateProfileAndCoverPhotoClient(type: 'profile' | 'cover') {
       showToast({
         type: 'error',
         title: 'Error',
-        message: 'Failed to save position',
+        message: error instanceof Error ? error.message : 'Failed to save position',
       });
     } finally {
       setIsPending(false);
+    }
+  };
+
+  const openInput = () => {
+    if (inputFileRef.current) {
+      inputFileRef.current.click();
     }
   };
 
