@@ -37,8 +37,11 @@ export default function ProfilePhoto({
     setTempPhotoUrl(tempUrl);
     
     try {
-      await handleChange(e);
-      // Don't clear tempPhotoUrl - let the loading state handle it
+      const uploadedUrl = await handleChange(e);
+      if (uploadedUrl) {
+        setTempPhotoUrl(uploadedUrl); // Update temp URL with uploaded URL
+        setTempPhotoUrl(null); // Only clear after setting the uploaded URL
+      }
     } catch (error) {
       setTempPhotoUrl(null);
     }
@@ -47,13 +50,11 @@ export default function ProfilePhoto({
   return (
     <div className="absolute bottom-[-88px] h-44 w-44 border-white bg-cover">
       {/* Show loading overlay when uploading */}
-      {isPending ? (
+      {isPending && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-full bg-black/50">
           <div className="mb-2 h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
           <p className="text-xs text-white">Updating...</p>
         </div>
-      ) : (
-        tempPhotoUrl ? <>{setTempPhotoUrl(null)}</> : null
       )}
 
       {/* Display either temp preview or actual photo */}
