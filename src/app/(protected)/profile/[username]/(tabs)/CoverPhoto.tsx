@@ -22,11 +22,11 @@ export default function CoverPhoto({
     useUpdateProfileAndCoverPhotoClient('cover');
   const { showVisualMediaModal } = useVisualMediaModal();
 
-  // State to track position, dragging status, and image upload status
   const [positionY, setPositionY] = useState(posY);
   const [isDragging, setIsDragging] = useState(false);
   const [isPhotoUploaded, setIsPhotoUploaded] = useState(false);
-  const [showDragMessage, setShowDragMessage] = useState(true); // State for showing the message
+  const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
+  const [showDragMessage, setShowDragMessage] = useState(false);
 
   const dragStartY = useRef(0);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -88,21 +88,29 @@ export default function CoverPhoto({
   };
 
   // Handle file upload
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleChange(e); // Call original handleChange to update the photo
-    setIsPhotoUploaded(true); // Enable dragging after photo is uploaded
-    setShowDragMessage(true); // Show the message after a new photo is uploaded
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Create temporary URL for preview
+    const tempUrl = URL.createObjectURL(file);
+    setTempPhotoUrl(tempUrl);
+    
+    try {
+      const uploadedUrl = await handleChange(e);
+      if (uploadedUrl) {
+        setIsPhotoUploaded(true);
+        setShowDragMessage(true);
+      }
+    } catch (error) {
+      setTempPhotoUrl(null);
+    }
   };
 
   // Save the image's position
-  const handleSavePosition = () => {
-    setIsPhotoUploaded(false); // Reset photo upload state
-    savePositionY(positionY!); // Call the savePositionY function
-    console.log('Position saved:', positionY); // Implement save logic here
-  };
-
-  // Use effect or logic to hide the message after any interaction
-  const disableDragMessage = () => {
+  const handleSavePosition = async () => {
+    await savePositionY(positionY!);
+    setIsPhotoUploaded(false);
     setShowDragMessage(false);
   };
 
@@ -117,9 +125,18 @@ export default function CoverPhoto({
       onTouchEnd={handleDragEnd}
       onTouchCancel={handleDragEnd}
     >
-      {photoUrl && (
+      {/* Show loading overlay when uploading */}
+      {isPending && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <p className="text-center text-white">Cover photo is updating...</p>
+        </div>
+      )}
+
+      {/* Display either temp preview or actual photo */}
+      {(tempPhotoUrl || photoUrl) && (
         <img
-          src={photoUrl}
+          src={tempPhotoUrl || photoUrl}
           alt="Cover"
           className={`absolute w-full object-cover ${
             isPhotoUploaded ? 'cursor-move' : ''
@@ -127,64 +144,62 @@ export default function CoverPhoto({
           ref={imageRef}
           style={{
             transform: `translateY(${positionY}px)`,
-            height: '120%', // Make image slightly taller than container
+            height: '120%',
             objectPosition: 'center',
           }}
-          onMouseDown={handleDragStart}
-          onTouchStart={handleDragStart}
+          onMouseDown={isPhotoUploaded ? handleDragStart : undefined}
+          onTouchStart={isPhotoUploaded ? handleDragStart : undefined}
           draggable="false"
         />
       )}
 
-      {/* Show a message that the user can drag the image */}
+      {/* Show drag message only after successful upload */}
       {isPhotoUploaded && showDragMessage && (
-        <div
-          onMouseDown={disableDragMessage}
-          className="absolute left-0 top-0 z-10 flex h-full w-full items-center justify-center bg-black/50 text-white">
-          <p className="text-center">Drag to adjust your cover photo</p>
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+          <p className="text-center text-white">Drag to adjust your cover photo</p>
         </div>
       )}
 
-      {/* Overlay to open photo modal */}
-      {!isPhotoUploaded && (
+      {/* Photo open button */}
+      {!isPhotoUploaded && !isPending && photoUrl && (
         <button
           type="button"
           aria-label="Open cover photo"
           onClick={openCoverPhoto}
-          className="absolute h-full w-full cursor-pointer bg-black/30 opacity-0 active:opacity-100"
+          className="absolute inset-0 cursor-pointer bg-black/30 opacity-0 active:opacity-100"
         />
       )}
 
-      {/* File upload for own profile */}
-      {isOwnProfile && (isPhotoUploaded || !isPending) && (
-        <label>
-          <div className="absolute bottom-4 right-4">
-            <input
-              type="file"
-              name="file"
-              ref={inputFileRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept="image/png, image/jpg, image/jpeg"
-            />
+      {/* Upload/Save buttons */}
+      {isOwnProfile && !isPending && (
+        <div className="absolute bottom-4 right-4">
+          {isPhotoUploaded ? (
             <Button
-              Icon={SvgImage}
+              Icon={Check}
               iconClassName="text-primary-foreground"
-              onPress={openInput}
+              onPress={handleSavePosition}
               size="small"
-              loading={isPending}
             />
-          </div>
-        </label>
-      )}
-
-      {/* Show Save button only after a new photo is uploaded */}
-      {isPhotoUploaded && !isPending && (
-        <label>
-          <div className="absolute bottom-4 right-4">
-            <Button Icon={Check} iconClassName="text-primary-foreground" onPress={handleSavePosition} size="small" />
-          </div>
-        </label>
+          ) : (
+            <label>
+              <input
+                type="file"
+                ref={inputFileRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/png, image/jpg, image/jpeg"
+                disabled={isPending}
+              />
+              <Button
+                Icon={SvgImage}
+                iconClassName="text-primary-foreground"
+                onPress={openInput}
+                size="small"
+                disabled={isPending}
+              />
+            </label>
+          )}
+        </div>
       )}
     </div>
   );
