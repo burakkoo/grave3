@@ -37,23 +37,30 @@ export function useUpdateProfileAndCoverPhotoClient(type: 'profile' | 'cover') {
         throw new Error(data.error || 'Failed to update photo');
       }
 
-      // Immediately update the cache with new data
-      queryClient.setQueryData(['user', userId], (oldData: any) => ({
-        ...oldData,
-        [type === 'profile' ? 'profilePhoto' : 'coverPhoto']: data.uploadedTo
-      }));
-
-      // Update any queries that include this user's data
-      queryClient.setQueriesData({ queryKey: ['user'] }, (oldData: any) => {
-        if (!oldData) return oldData;
-        return {
+      // Update all related queries immediately
+      await Promise.all([
+        // Update specific user query
+        queryClient.setQueryData(['user', userId], (oldData: any) => ({
           ...oldData,
           [type === 'profile' ? 'profilePhoto' : 'coverPhoto']: data.uploadedTo
-        };
-      });
+        })),
 
-      // Force a refetch to ensure consistency
-      await queryClient.refetchQueries({ queryKey: ['user', userId] });
+        // Update all user queries that might contain this user
+        queryClient.setQueriesData(
+          { queryKey: ['user'] },
+          (oldData: any) => {
+            if (!oldData || typeof oldData !== 'object') return oldData;
+            return {
+              ...oldData,
+              [type === 'profile' ? 'profilePhoto' : 'coverPhoto']: data.uploadedTo
+            };
+          }
+        ),
+
+        // Force refetch all user queries
+        queryClient.invalidateQueries({ queryKey: ['user'] }),
+        queryClient.refetchQueries({ queryKey: ['user'] })
+      ]);
 
       showToast({
         type: 'success',
