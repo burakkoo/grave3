@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { GetUser } from '@/types/definitions';
 import { FaFacebook, FaInstagram, FaTwitter, FaWikipediaW, FaSpotify, FaYoutube } from 'react-icons/fa';
@@ -14,14 +14,16 @@ import {
 } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 
-export function About({ profile }: { profile: GetUser }) {
+export function About({ profile: initialProfile }: { profile: GetUser }) {
   const router = useRouter();
+  const [profile, setProfile] = useState(initialProfile);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Add revalidation tag at the component level
-  React.useEffect(() => {
-    // This will revalidate the page when profile data changes
-    router.refresh();
-  }, [profile]);
+  useEffect(() => {
+    // Update profile state when prop changes
+    setProfile(initialProfile);
+    setIsLoading(false);
+  }, [initialProfile]);
 
   const {
     name,
@@ -56,6 +58,17 @@ export function About({ profile }: { profile: GetUser }) {
   // Separate Spotify playlists and regular music
   const spotifyPlaylists = favoriteMusic.filter(song => song.includes('spotify'));
   const regularMusic = favoriteMusic.filter(song => !song.includes('spotify'));
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-4xl animate-pulse">
+        {/* Add skeleton loading state here */}
+        <div className="h-40 bg-muted rounded-lg mb-8"></div>
+        <div className="h-20 bg-muted rounded-lg mb-4"></div>
+        <div className="h-20 bg-muted rounded-lg"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl text-foreground">
