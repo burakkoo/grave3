@@ -17,13 +17,52 @@ import { useRouter } from 'next/navigation';
 export function About({ profile: initialProfile }: { profile: GetUser }) {
   const router = useRouter();
   const [profile, setProfile] = useState(initialProfile);
-  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   useEffect(() => {
-    // Update profile state when prop changes
-    setProfile(initialProfile);
-    setIsLoading(false);
-  }, [initialProfile]);
+    const updateProfile = async () => {
+      try {
+        setStatus('loading');
+        
+        // Fetch fresh data instead of using initialProfile
+        const response = await fetch(`/api/profile/${initialProfile.username}`, {
+          cache: 'no-store',
+          next: { revalidate: 0 }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch profile');
+        
+        const freshProfile = await response.json();
+        setProfile(freshProfile);
+        setStatus('success');
+      } catch (error) {
+        console.error('Profile fetch error:', error);
+        setStatus('error');
+        // Fallback to initial profile if fetch fails
+        setProfile(initialProfile);
+      }
+    };
+
+    updateProfile();
+  }, [initialProfile.username]);
+
+  if (status === 'loading') {
+    return (
+      <div className="mx-auto max-w-4xl animate-pulse">
+        <div className="h-40 bg-muted rounded-lg mb-8"></div>
+        <div className="h-20 bg-muted rounded-lg mb-4"></div>
+        <div className="h-20 bg-muted rounded-lg"></div>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="mx-auto max-w-4xl text-center text-red-500">
+        Error loading profile. Please try refreshing the page.
+      </div>
+    );
+  }
 
   const {
     name,
@@ -58,17 +97,6 @@ export function About({ profile: initialProfile }: { profile: GetUser }) {
   // Separate Spotify playlists and regular music
   const spotifyPlaylists = favoriteMusic.filter(song => song.includes('spotify'));
   const regularMusic = favoriteMusic.filter(song => !song.includes('spotify'));
-
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-4xl animate-pulse">
-        {/* Add skeleton loading state here */}
-        <div className="h-40 bg-muted rounded-lg mb-8"></div>
-        <div className="h-20 bg-muted rounded-lg mb-4"></div>
-        <div className="h-20 bg-muted rounded-lg"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-4xl text-foreground">
