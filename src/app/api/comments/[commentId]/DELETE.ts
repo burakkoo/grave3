@@ -24,23 +24,12 @@ export async function DELETE(request: Request, { params }: { params: { commentId
   // Delete the associated 'CREATE_REPLY' or 'CREATE_COMMENT' activity logs
   // If `isComment` is false, it is a reply
   const type = res?.parentId ? 'CREATE_REPLY' : 'CREATE_COMMENT';
-
-  // Add type casting to ensure targetId is a number
-  const targetId = (() => {
-    if (type === 'CREATE_COMMENT') {
-      return typeof res.postId === 'string' ? parseInt(res.postId, 10) : res.postId;
-    }
-    return res.parentId ? 
-      (typeof res.parentId === 'string' ? parseInt(res.parentId, 10) : res.parentId) : 
-      null;
-  })();
-
   await prisma.activity.deleteMany({
     where: {
       type,
       sourceUserId: user?.id,
       sourceId: res.id,
-      targetId,
+      targetId: type === 'CREATE_COMMENT' ? res.postId : res.parentId,
     },
   });
 

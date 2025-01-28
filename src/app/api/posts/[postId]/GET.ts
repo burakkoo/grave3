@@ -18,18 +18,10 @@ export async function GET(request: Request, { params }: { params: { postId: stri
   const [user] = await getServerUser();
   const res = await prisma.post.findUnique({
     where: {
-      id: params.postId,
+      id: parseInt(params.postId),
     },
     select: {
       ...selectPost(user?.id),
-      user: {
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          profilePhoto: true,
-        },
-      },
       visualMedia: {
         select: {
           id: true,

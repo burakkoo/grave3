@@ -59,7 +59,7 @@ export interface GetVisualMedia {
 
 // Use this type when finding a Post in prisma.
 export interface FindPostResult {
-  id: string;
+  id: number;
   content: string | null;
   createdAt: Date;
   PostedBy: string | null;
@@ -68,14 +68,7 @@ export interface FindPostResult {
     id: number;
   }[];
   user: UserSummary;
-  visualMedia: {
-    id: number;
-    type: VisualMediaType;
-    fileName: string;
-    uploadedAt: Date;
-    userId: string;
-    postId: string;
-  }[];
+  visualMedia: VisualMedia[];
   _count: {
     postLikes: number;
     comments: number;
@@ -88,7 +81,7 @@ export interface FindPostResult {
  * <GetPost> must be the response type of GET posts route handlers.
  */
 export interface GetPost {
-  id: string;
+  id: number;
   content: string | null;
   createdAt: string;
   user: {
@@ -208,6 +201,6 @@ export interface VisualMedia {
   fileName: string;
   uploadedAt: Date;
   userId: string;
-  postId: string;
-  url?: string;
+  postId: number;
+  url?: string; // Make url optional for Prisma results
 }

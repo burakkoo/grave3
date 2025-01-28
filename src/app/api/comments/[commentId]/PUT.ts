@@ -43,10 +43,6 @@ export async function PUT(request: Request, { params }: { params: { commentId: s
       include: includeToComment(userId),
     }) as unknown as Parameters<typeof toGetComment>[0];
 
-    const targetId = res.parentId ? 
-      (typeof res.parentId === 'string' ? parseInt(res.parentId, 10) : res.parentId) :
-      (typeof res.postId === 'string' ? parseInt(res.postId, 10) : res.postId);
-
     // Update the 'COMMENT_MENTION' or 'REPLY_MENTION' activity if applicable
     await mentionsActivityLogger({
       usersMentioned,
@@ -54,7 +50,7 @@ export async function PUT(request: Request, { params }: { params: { commentId: s
         type: res.parentId ? 'REPLY_MENTION' : 'COMMENT_MENTION',
         sourceUserId: userId,
         sourceId: res.id,
-        targetId,
+        targetId: res.parentId || res.postId,
       },
       isUpdate: true,
     });

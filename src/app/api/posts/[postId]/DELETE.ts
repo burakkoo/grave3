@@ -8,11 +8,8 @@ import prisma from '@/lib/prisma/prisma';
 import { deleteObject } from '@/lib/s3/deleteObject';
 import { verifyAccessToPost } from './verifyAccessToPost';
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { postId: string } }
-) {
-  const postId = params.postId; // Keep as string since Post.id is String type
+export async function DELETE(request: Request, { params }: { params: { postId: string } }) {
+  const postId = parseInt(params.postId);
   
   // Verify access first
   const hasAccess = await verifyAccessToPost(postId);
@@ -23,11 +20,12 @@ export async function DELETE(
   try {
     // Delete the post and associated media
     const res = await prisma.post.delete({
-      include: {
+      select: {
+        id: true,
         visualMedia: true,
       },
       where: {
-        id: postId, // Use string ID
+        id: postId,
       },
     });
 

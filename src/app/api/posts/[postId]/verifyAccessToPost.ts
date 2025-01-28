@@ -1,7 +1,7 @@
 import { getServerUser } from '@/lib/getServerUser';
 import prisma from '@/lib/prisma/prisma';
 
-export async function verifyAccessToPost(postId: string) {
+export async function verifyAccessToPost(postId: number) {
   const [user] = await getServerUser();
   if (!user) return false;
 
