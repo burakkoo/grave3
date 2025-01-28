@@ -52,6 +52,7 @@ export default function CoverPhoto({
   // Handle both mouse and touch events
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isPhotoUploaded) return;
+    e.preventDefault();
     setIsDragging(true);
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     dragStartY.current = clientY - (positionY || 0);
@@ -146,6 +147,8 @@ export default function CoverPhoto({
             transform: `translateY(${positionY}px)`,
             height: '120%',
             objectPosition: 'center',
+            userSelect: 'none',
+            pointerEvents: isPhotoUploaded ? 'auto' : 'none',
           }}
           onMouseDown={isPhotoUploaded ? handleDragStart : undefined}
           onTouchStart={isPhotoUploaded ? handleDragStart : undefined}
