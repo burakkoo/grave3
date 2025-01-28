@@ -136,7 +136,7 @@ export default function CoverPhoto({
       {/* Display either temp preview or actual photo */}
       {(tempPhotoUrl || photoUrl) && (
         <img
-          src={tempPhotoUrl || photoUrl}
+          src={tempPhotoUrl || photoUrl || ''}
           alt="Cover"
           className={`absolute w-full object-cover ${
             isPhotoUploaded ? 'cursor-move' : ''
@@ -179,6 +179,7 @@ export default function CoverPhoto({
               iconClassName="text-primary-foreground"
               onPress={handleSavePosition}
               size="small"
+              isDisabled={isPending}
             />
           ) : (
             <label>
@@ -195,7 +196,7 @@ export default function CoverPhoto({
                 iconClassName="text-primary-foreground"
                 onPress={openInput}
                 size="small"
-                disabled={isPending}
+                isDisabled={isPending}
               />
             </label>
           )}
