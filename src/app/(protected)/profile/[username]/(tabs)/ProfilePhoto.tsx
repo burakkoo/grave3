@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { FallbackProfilePhoto } from '@/components/ui/FallbackProfilePhoto';
 import { useUpdateProfileAndCoverPhotoClient } from '@/hooks/useUpdateProfileAndCoverPhotoClient';
 import { useVisualMediaModal } from '@/hooks/useVisualMediaModal';
 import { Camera } from '@/svg_components';
-import Check from '@/svg_components/Check';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 
@@ -35,29 +34,35 @@ export default function ProfilePhoto({
     // Create temporary URL for preview
     const tempUrl = URL.createObjectURL(file);
     setTempPhotoUrl(tempUrl);
-    
+
     try {
       const uploadedUrl = await handleChange(e);
       if (uploadedUrl) {
-        // Force an immediate update of the UI
+        // Update temp photo URL with the new uploaded URL
+        setTempPhotoUrl(uploadedUrl);
+
+        // Update query data for the current user
         queryClient.setQueryData(['user', profileId], (oldData: any) => ({
           ...oldData,
-          profilePhoto: uploadedUrl
+          profilePhoto: uploadedUrl,
         }));
 
-        // Clear the temporary URL
-        URL.revokeObjectURL(tempUrl);
-        setTempPhotoUrl(null);
-
-        // Force a refetch of all user data
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['user'] }),
-          queryClient.refetchQueries({ queryKey: ['user'] })
-        ]);
+        // Fix: Use proper invalidation syntax
+        queryClient.invalidateQueries({
+          queryKey: ['user', profileId]
+        });
       }
     } catch (error) {
-      URL.revokeObjectURL(tempUrl);
+      // Fix: Add required title prop to toast
+      showToast({ 
+        title: 'Error',
+        message: 'Failed to update profile photo.', 
+        type: 'error' 
+      });
       setTempPhotoUrl(null);
+    } finally {
+      // Revoke temporary URL
+      URL.revokeObjectURL(tempUrl);
     }
   };
 
@@ -73,16 +78,14 @@ export default function ProfilePhoto({
 
       {/* Display either temp preview or actual photo */}
       {(tempPhotoUrl || photoUrl) && (
-        <img 
-          src={tempPhotoUrl || photoUrl || ''} 
-          alt="Profile photo" 
+        <img
+          src={tempPhotoUrl || photoUrl || ''}
+          alt="Profile photo"
           className="absolute h-full w-full rounded-full border-4 border-white object-cover"
-          onError={() => {
-            setTempPhotoUrl(null);
-          }}
+          onError={() => setTempPhotoUrl(null)}
         />
       )}
-      
+
       {!tempPhotoUrl && !photoUrl && (
         <FallbackProfilePhoto name={name} className="text-6xl" />
       )}
